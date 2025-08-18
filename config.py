@@ -1,0 +1,18 @@
+from dotenv import dotenv_values
+
+CONFIG = dotenv_values(".env")
+
+LLM_API_BASE_URL = CONFIG["LLM_API_BASE_URL"]
+LLM_API_KEY = CONFIG["LLM_API_KEY"]
+LLM_NAME = CONFIG["LLM_NAME"]
+
+VLM_API_BASE_URL = CONFIG["VLM_API_BASE_URL"]
+VLM_API_KEY = CONFIG["VLM_API_KEY"]
+VLM_NAME = CONFIG["VLM_NAME"]
+
+CHUNK_MAX_TOKENS = int(CONFIG["CHUNK_MAX_TOKENS"])
+
+DEBUG_MODE = True if CONFIG["DEBUG_MODE"].strip().lower() == "true" else False
+
+WARNING_TOK_FRAC = float(CONFIG.get("WARNING_TOK_FRAC", "0.8"))
+FLUSH_TOK_FRAC = float(CONFIG.get("FLUSH_TOK_FRAC", "0.95"))
