@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
 from typing import Any, Deque, Dict, List, Literal, Tuple, Union
+import shelve
 
 import yaml
 
@@ -32,6 +33,13 @@ class WorkingContext:
 
 {self.tasks}
 """.strip()
+
+    def save(self) -> None: # use shelve to save/load
+        pass
+        
+    @staticmethod
+    def load(agent_id) -> WorkingContext:
+        pass
 
 
 class ArchivalStorage:  # *ChromaDB
@@ -143,6 +151,9 @@ class Message:
             "content": yaml_str,
         }
 
+@dataclass
+class FIFOQueue: #use SQLite to store
+    messages: Deque[Message]
 
 # *Memory obj
 @dataclass
@@ -151,7 +162,7 @@ class Memory:
     archival_storage: ArchivalStorage
     recall_storage: RecallStorage
     function_sets: FunctionSets
-    fifo_queue: Deque[Message]
+    fifo_queue: FIFOQueue
 
     def __repr__(self) -> str:
         return f"""
@@ -163,7 +174,11 @@ class Memory:
 
 ## Archival Storage
 
-{self.working_context}
+{self.archival_storage}
+
+## Recall Storage
+
+{self.recall_storage}
 
 # Function Schemas
 
@@ -178,7 +193,7 @@ class Memory:
 
         last_userside_messages = []
 
-        for msg in self.fifo_queue:
+        for msg in self.fifo_queue.messages:
             msg_intermediate = msg.to_intermediate_repr()
             if msg_intermediate["role"] == "user":
                 last_userside_messages.append(msg_intermediate["content"])
