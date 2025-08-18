@@ -16,6 +16,7 @@ class WorkingContext:
     agent_persona: str
     user_persona: str
     tasks: Queue[str]  # *To add functions for pushing and popping this queue
+    agent_id: str
 
     def __repr__(self) -> str:
         return f"""
@@ -34,14 +35,14 @@ class WorkingContext:
 
 
 class ArchivalStorage:  # *ChromaDB
-    def __init__(self) -> None:
+    def __init__(self, agent_id: str) -> None:
         pass
 
 
 class RecallStorage:  # *ChromaDB/SQLite
     # TODO: decide whether to have just `recall_search` (sqlite)
     # or `recall_search_exact` and `recall_search_similarity` (chromadb)
-    def __init__(self) -> None:
+    def __init__(self, agent_id: str) -> None:
         pass
 
 
@@ -49,7 +50,7 @@ class RecallStorage:  # *ChromaDB/SQLite
 
 
 class FunctionSets:
-    def __init__(self) -> None:
+    def __init__(self, agent_id: str) -> None:
         pass
 
 
