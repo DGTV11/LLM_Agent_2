@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "chromadb>=1.0.20",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.116.1",
     "mypy>=1.17.1",

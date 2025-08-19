@@ -16,5 +16,7 @@ wheels/
 function-sets/user-defined/*
 !function-sets/user-defined/.gitkeep
 
-persistent-storage/*
-!persistent-storage/.gitkeep
+# persistent-storage/*
+# !persistent-storage/.gitkeep
+db.sqlite
+vector_db.chroma
