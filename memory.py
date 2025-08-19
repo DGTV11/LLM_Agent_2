@@ -267,10 +267,15 @@ class FIFOQueue:
         )
 
     def pop_message(self) -> Message:
-        id, agent_id, message_type, timestamp, content = db.sqlite_db_read_query(
+        db_res = db.sqlite_db_read_query(
             "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
             (self.agent_id,),
-        )[0]
+        )
+        
+        if len(db_res) == 0:
+            raise ValueError("Message queue empty!")
+        
+        id, agent_id, message_type, timestamp, content = db_res[0]
 
         db.sqlite_db_write_query(
             "DELETE FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
