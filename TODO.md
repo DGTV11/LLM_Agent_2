@@ -1,8 +1,22 @@
-1. Implement function loader (use Pydantic model and desc -> yaml schema)
-- use shared state for agent state
-- dynamically load functions using `agent_node - func_name >> function_node` for loop
-- add yaml schemas using Pydantic
-2. Implement persistent storage
-- remember to add summary in separate Message outside of fifo queue (to preserve queue-ness)
-3. Implement functions
-- remember pagination!
+1. Implement memory subsystems (link to DB)
+    - [x] FIFO Queue
+    - [ ] Working Context
+    - [ ] Recall Storage
+    - [ ] Archival Storage
+    - [ ] Context Summariser
+2. Implement function loader (use Pydantic model and desc -> yaml schema)+functions (Nodes)
+    - use shared state for agent state
+    - dynamically load functions using `agent_node - func_name >> function_node` for loop
+    - add yaml schemas using Pydantic
+
+Remember:
+```
+Agent Node (Queue Manager in post function of node) -> Function Node (multiple exists)
+                         ^                                           |
+                         |                                           |
+                         --------------------------------------------+
+                                                                     v
+                                                                 Exit Node
+```
+
+Web search should spawn a different kind of agent (Research agent)

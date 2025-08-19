@@ -182,9 +182,7 @@ class ArchivalStorage:  # *ChromaDB
         pass
 
 
-class RecallStorage:  # *ChromaDB/SQLite
-    # TODO: decide whether to have just `recall_search` (sqlite)
-    # or `recall_search_exact` and `recall_search_similarity` (chromadb)
+class RecallStorage:  # *SQLite
     def __init__(self, agent_id: str) -> None:
         pass
 
