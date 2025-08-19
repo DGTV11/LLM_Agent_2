@@ -1,65 +1,14 @@
+import json
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
 from typing import Any, Deque, Dict, List, Literal, Tuple, Union
-import shelve
 
 import yaml
 
+import db
 from prompts import SYSTEM_PROMPT
-
-# * Memory modules
-
-
-@dataclass
-class WorkingContext:
-    agent_persona: str
-    user_persona: str
-    tasks: Queue[str]  # *To add functions for pushing and popping this queue
-    agent_id: str
-
-    def __repr__(self) -> str:
-        return f"""
-## Agent Persona
-
-{self.agent_persona}
-
-## User Persona
-
-{self.user_persona}
-
-## Task Queue
-
-{self.tasks}
-""".strip()
-
-    def save(self) -> None: # use shelve to save/load
-        pass
-        
-    @staticmethod
-    def load(agent_id) -> WorkingContext:
-        pass
-
-
-class ArchivalStorage:  # *ChromaDB
-    def __init__(self, agent_id: str) -> None:
-        pass
-
-
-class RecallStorage:  # *ChromaDB/SQLite
-    # TODO: decide whether to have just `recall_search` (sqlite)
-    # or `recall_search_exact` and `recall_search_similarity` (chromadb)
-    def __init__(self, agent_id: str) -> None:
-        pass
-
-
-# * Function sets (TBD)
-
-
-class FunctionSets:
-    def __init__(self, agent_id: str) -> None:
-        pass
 
 
 # *Messages
@@ -94,66 +43,188 @@ class Message:
     timestamp: datetime
     content: Union[TextContent, AssistantMessageContent, FunctionResultContent]
 
-    def to_intermediate_repr(self) -> Dict[str, str]:
+    def to_intermediate_repr(self) -> Dict[str, Any]:
         match self.message_type:
             case "user":
                 assert type(self.content) is TextContent
-                yaml_str = yaml.dump(
-                    {
-                        "message_type": self.message_type,
-                        "timestamp": self.timestamp.strftime("%a %d %b %Y, %I:%M%p"),
-                        "content": {"message": self.content.message},
-                    }
-                ).strip()
+                return {
+                    "message_type": self.message_type,
+                    "timestamp": self.timestamp.isoformat(),
+                    "content": {"message": self.content.message},
+                }
             case "system":
                 assert type(self.content) is TextContent
-                yaml_str = yaml.dump(
-                    {
-                        "message_type": self.message_type,
-                        "timestamp": self.timestamp.strftime("%a %d %b %Y, %I:%M%p"),
-                        "content": {"message": self.content.message},
-                    }
-                ).strip()
+                return {
+                    "message_type": self.message_type,
+                    "timestamp": self.timestamp.isoformat(),
+                    "content": {"message": self.content.message},
+                }
             case "assistant":
                 assert type(self.content) is AssistantMessageContent
-                yaml_str = yaml.dump(
-                    {
-                        "message_type": self.message_type,
-                        "timestamp": self.timestamp.strftime("%a %d %b %Y, %I:%M%p"),
-                        "content": {
-                            "emotions": self.content.emotions,
-                            "thoughts": self.content.thoughts,
-                            "function_call": {
-                                "name": self.content.function_call.name,
-                                "arguments": self.content.function_call.arguments,
-                                "do_heartbeat": self.content.function_call.do_heartbeat,
-                            },
+                return {
+                    "message_type": self.message_type,
+                    "timestamp": self.timestamp.isoformat(),
+                    "content": {
+                        "emotions": self.content.emotions,
+                        "thoughts": self.content.thoughts,
+                        "function_call": {
+                            "name": self.content.function_call.name,
+                            "arguments": self.content.function_call.arguments,
+                            "do_heartbeat": self.content.function_call.do_heartbeat,
                         },
-                    }
-                ).strip()
+                    },
+                }
             case "function_res":
                 assert type(self.content) is FunctionResultContent
-                yaml_str = yaml.dump(
-                    {
-                        "message_type": self.message_type,
-                        "timestamp": self.timestamp.strftime("%a %d %b %Y, %I:%M%p"),
-                        "content": {
-                            "success": self.content.success,
-                            "result": self.content.result,
-                        },
-                    }
-                ).strip()
+                return {
+                    "message_type": self.message_type,
+                    "timestamp": self.timestamp.isoformat(),
+                    "content": {
+                        "success": self.content.success,
+                        "result": self.content.result,
+                    },
+                }
             case _:
                 raise ValueError("Invalid message_type")
 
+    def to_std_message_format(self) -> Dict[str, str]:
         return {
             "role": "assistant" if self.message_type == "assistant" else "user",
-            "content": yaml_str,
+            "content": yaml.dump(self.to_intermediate_repr()).strip(),
         }
 
+    @staticmethod
+    def from_intermediate_repr(intermediate_repr: Dict[str, Any]) -> Message:
+        match intermediate_repr["message_type"]:
+            case "user":
+                return Message(
+                    message_type="user",
+                    timestamp=datetime.fromisoformat(intermediate_repr["timestamp"]),
+                    content=TextContent(
+                        message=intermediate_repr["content"]["message"]
+                    ),
+                )
+            case "system":
+                return Message(
+                    message_type="system",
+                    timestamp=datetime.fromisoformat(intermediate_repr["timestamp"]),
+                    content=TextContent(
+                        message=intermediate_repr["content"]["message"]
+                    ),
+                )
+            case "assistant":
+                return Message(
+                    message_type="assistant",
+                    timestamp=datetime.fromisoformat(intermediate_repr["timestamp"]),
+                    content=AssistantMessageContent(
+                        emotions=intermediate_repr["content"]["emotions"],
+                        thoughts=intermediate_repr["content"]["thoughts"],
+                        function_call=FunctionCall(
+                            name=intermediate_repr["content"]["function_call"]["name"],
+                            arguments=intermediate_repr["content"]["function_call"][
+                                "arguments"
+                            ],
+                            do_heartbeat=intermediate_repr["content"]["function_call"][
+                                "do_heartbeat"
+                            ],
+                        ),
+                    ),
+                )
+            case "function_res":
+                return Message(
+                    message_type="system",
+                    timestamp=datetime.fromisoformat(intermediate_repr["timestamp"]),
+                    content=FunctionResultContent(
+                        success=intermediate_repr["content"]["success"],
+                        result=intermediate_repr["content"]["result"],
+                    ),
+                )
+            case _:
+                raise ValueError("Invalid message_type")
+
+
+# * Memory modules
+
+
 @dataclass
-class FIFOQueue: #use SQLite to store
-    messages: Deque[Message]
+class WorkingContext:
+    agent_persona: str
+    user_persona: str
+    tasks: Queue[str]  # *To add functions for pushing and popping this queue
+    agent_id: str
+
+    def __repr__(self) -> str:
+        return f"""
+## Agent Persona
+
+{self.agent_persona}
+
+## User Persona
+
+{self.user_persona}
+
+## Task Queue
+
+{self.tasks}
+""".strip()
+
+    def save(self) -> None:
+        pass
+
+    @staticmethod
+    def load(agent_id) -> WorkingContext:
+        pass
+
+
+class ArchivalStorage:  # *ChromaDB
+    def __init__(self, agent_id: str) -> None:
+        pass
+
+
+class RecallStorage:  # *ChromaDB/SQLite
+    # TODO: decide whether to have just `recall_search` (sqlite)
+    # or `recall_search_exact` and `recall_search_similarity` (chromadb)
+    def __init__(self, agent_id: str) -> None:
+        pass
+
+
+# * Function sets (TBD)
+
+
+class FunctionSets:
+    def __init__(self, agent_id: str) -> None:
+        pass
+
+
+@dataclass
+class FIFOQueue:  # use SQLite to store
+    agent_id: str
+
+    @property
+    def messages(self) -> List[Message]:
+        message_list = []
+        for message_type, timestamp, content in db.sqlite_db_read_query(
+            """
+        SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?
+        """,
+            (self.agent_id,),
+        ):
+            message_dict = {
+                "message_type": message_type,
+                "timestamp": timestamp,
+                "content": json.loads(content),
+            }
+
+            message_list.append(Message.from_intermediate_repr(message_dict))
+
+        return message
+
+    def push_message(self, message: Message) -> None:
+        pass
+
+    def pop_message(self) -> Message:
+        pass
+
 
 # *Memory obj
 @dataclass
@@ -193,8 +264,8 @@ class Memory:
 
         last_userside_messages = []
 
-        for msg in self.fifo_queue.messages:
-            msg_intermediate = msg.to_intermediate_repr()
+        for msg in self.fifo_queue.messages:  # TODO: add recursive summary db query
+            msg_intermediate = msg.to_std_message_format()
             if msg_intermediate["role"] == "user":
                 last_userside_messages.append(msg_intermediate["content"])
             else:
