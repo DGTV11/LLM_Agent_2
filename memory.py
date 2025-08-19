@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
 from typing import Any, Deque, Dict, List, Literal, Tuple, Union
+from uuid import uuid4
 
 import yaml
 
@@ -197,16 +198,14 @@ class FunctionSets:
 
 
 @dataclass
-class FIFOQueue:  # use SQLite to store
+class FIFOQueue:
     agent_id: str
 
     @property
     def messages(self) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
-            """
-        SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?
-        """,
+            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?",
             (self.agent_id,),
         ):
             message_dict = {
@@ -217,13 +216,50 @@ class FIFOQueue:  # use SQLite to store
 
             message_list.append(Message.from_intermediate_repr(message_dict))
 
-        return message
+        return message_list
+
+    def __len__(self) -> int:
+        return len(
+            db.sqlite_db_read_query(
+                "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?",
+                (self.agent_id,),
+            )
+        )
 
     def push_message(self, message: Message) -> None:
-        pass
+        message_intermediate = message.to_intermediate_repr()
+
+        db.sqlite_db_write_query(
+            """
+            INSERT INTO fifo_queue (id, agent_id, message_type, timestamp, content)
+            (?, ?, ?, ?, ?);
+            """,
+            (
+                str(uuid4()),
+                self.agent_id,
+                message_intermediate["message_type"],
+                message_intermediate["timestamp"],
+                json.dumps(message_intermediate["content"]),
+            ),
+        )
 
     def pop_message(self) -> Message:
-        pass
+        id, agent_id, message_type, timestamp, content = db.sqlite_db_read_query(
+            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
+            (self.agent_id,),
+        )[0]
+
+        db.sqlite_db_write_query(
+            "DELETE FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
+            (self.agent_id,),
+        )
+        message_dict = {
+            "message_type": message_type,
+            "timestamp": timestamp,
+            "content": json.loads(content),
+        }
+
+        return Message.from_intermediate_repr(message_dict)
 
 
 # *Memory obj
@@ -259,12 +295,37 @@ class Memory:
     def get_system_prompt(self) -> str:
         return "\n\n".join([SYSTEM_PROMPT, repr(self)])
 
+    def get_recursive_summary_and_summary_timestamp(self) -> Tuple[str, datetime]:
+        rs, rsut_txt = db.sqlite_db_read_query(
+            "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE agent_id = ?;",
+            (self.agent_id,),
+        )[0]
+
+        return rs, datetime.fromisoformat(rsut_txt)
+
     def get_llm_ctx(self) -> List[Dict[str, str]]:
         processed_messages = [{"role": "system", "content": self.get_system_prompt()}]
 
         last_userside_messages = []
 
-        for msg in self.fifo_queue.messages:  # TODO: add recursive summary db query
+        rs, rsut = self.get_recursive_summary_and_summary_timestamp()
+
+        for msg in (
+            [
+                Message(
+                    message_type="system",
+                    timestamp=rsut,
+                    content=TextContent(
+                        message=f"""
+# Recursive summary (contains conversation history beyond beginning of context window)
+
+{rs}
+""".strip()
+                    ),
+                )
+            ]
+            + self.fifo_queue.messages
+        ):
             msg_intermediate = msg.to_std_message_format()
             if msg_intermediate["role"] == "user":
                 last_userside_messages.append(msg_intermediate["content"])

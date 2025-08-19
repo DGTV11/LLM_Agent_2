@@ -13,7 +13,7 @@ client = chromadb.PersistentClient(
 
 
 def sqlite_db_write_query(
-    query: str, values: Optional[str] = None
+    query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> Any:  # values can be tuple
     cursor = SQLITE_DB_CONNECTION.cursor()
     if values:
@@ -26,7 +26,7 @@ def sqlite_db_write_query(
 
 
 def sqlite_db_read_query(
-    query: str, values: Optional[str] = None
+    query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> List[Tuple[Any, ...]]:  # values can be tuple
     cursor = SQLITE_DB_CONNECTION.cursor()
     if values:
@@ -43,9 +43,11 @@ sqlite_db_write_query(
     """
     CREATE TABLE IF NOT EXISTS agents (
         id TEXT PRIMARY KEY NOT NULL,
-        optional_function_sets TEXT NOT NULL, -- json list
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        recursive_summary TEXT DEFAULT "No content in recursive summary yet"
+        -- json list
+        optional_function_sets TEXT NOT NULL, 
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        recursive_summary TEXT DEFAULT "No content in recursive summary yet",
+        recursive_summary_update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
     );
     """,
 )
@@ -59,7 +61,8 @@ sqlite_db_write_query(
         agent_id TEXT NOT NULL,
         agent_persona TEXT NOT NULL,
         user_persona TEXT NOT NULL,
-        tasks TEXT NOT NULL, -- json list
+        -- json list
+        tasks TEXT NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
@@ -74,7 +77,8 @@ sqlite_db_write_query(
         agent_id TEXT NOT NULL,
         message_type TEXT NOT NULL,
         timestamp DATETIME NOT NULL,
-        content TEXT NOT NULL, -- json obj
+        -- json obj
+        content TEXT NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
@@ -89,7 +93,8 @@ sqlite_db_write_query(
         agent_id TEXT NOT NULL,
         message_type TEXT NOT NULL,
         timestamp DATETIME NOT NULL,
-        content TEXT NOT NULL, -- json obj
+        -- json obj
+        content TEXT NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
