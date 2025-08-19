@@ -1,7 +1,7 @@
 import sqlite3
 from os import path
 from sqlite3 import Error
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import chromadb
 
@@ -14,7 +14,7 @@ client = chromadb.PersistentClient(
 
 def sqlite_db_write_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
-) -> Any:  # values can be tuple
+) -> Union[int, float, str, bytes, None]:  # values can be tuple
     cursor = SQLITE_DB_CONNECTION.cursor()
     if values:
         cursor.execute(query, values)
@@ -47,7 +47,7 @@ sqlite_db_write_query(
         optional_function_sets TEXT NOT NULL, 
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         recursive_summary TEXT DEFAULT "No content in recursive summary yet",
-        recursive_summary_update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        recursive_summary_update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     """,
 )

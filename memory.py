@@ -95,7 +95,7 @@ class Message:
         }
 
     @staticmethod
-    def from_intermediate_repr(intermediate_repr: Dict[str, Any]) -> Message:
+    def from_intermediate_repr(intermediate_repr: Dict[str, Any]) -> "Message":
         match intermediate_repr["message_type"]:
             case "user":
                 return Message(
@@ -147,12 +147,44 @@ class Message:
 # * Memory modules
 
 
-@dataclass
+@dataclass()
 class WorkingContext:
-    agent_persona: str
-    user_persona: str
     tasks: Queue[str]  # *To add functions for pushing and popping this queue
     agent_id: str
+
+    @property
+    def agent_persona(self) -> Union[str, Any]:
+        return db.sqlite_db_read_query(
+            "SELECT agent_persona FROM agents WHERE agent_id = ?;",
+            (self.agent_id,),
+        )[0][0]
+
+    @agent_persona.setter
+    def agent_persona(self, value: str) -> None:
+        db.sqlite_db_write_query(
+            "UPDATE agents SET agent_persona = ? WHERE agent_id = ?;",
+            (
+                value,
+                self.agent_id,
+            ),
+        )
+
+    @property
+    def user_persona(self) -> Union[str, Any]:
+        return db.sqlite_db_read_query(
+            "SELECT user_persona FROM agents WHERE agent_id = ?;",
+            (self.agent_id,),
+        )[0][0]
+
+    @user_persona.setter
+    def user_persona(self, value: str) -> None:
+        db.sqlite_db_write_query(
+            "UPDATE agents SET user_persona = ? WHERE agent_id = ?;",
+            (
+                value,
+                self.agent_id,
+            ),
+        )
 
     def __repr__(self) -> str:
         return f"""
@@ -168,13 +200,6 @@ class WorkingContext:
 
 {self.tasks}
 """.strip()
-
-    def save(self) -> None:
-        pass
-
-    @staticmethod
-    def load(agent_id) -> WorkingContext:
-        pass
 
 
 class ArchivalStorage:  # *ChromaDB
@@ -268,6 +293,7 @@ class Memory:
     recall_storage: RecallStorage
     function_sets: FunctionSets
     fifo_queue: FIFOQueue
+    agent_id: str
 
     def __repr__(self) -> str:
         return f"""
