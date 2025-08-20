@@ -146,7 +146,7 @@ class Message:
 # * Memory modules
 
 
-@dataclass()
+@dataclass
 class WorkingContext:
     agent_id: str
 
@@ -236,9 +236,21 @@ class WorkingContext:
 """.strip()
 
 
+@dataclass
 class ArchivalStorage:  # *ChromaDB
+    agent_id: str
+
     def __init__(self, agent_id: str) -> None:
         pass
+
+    def archival_insert(self, content: str, category: str) -> None:
+        pass
+
+    def archival_search(self, query: str, category: str | None):
+        pass
+
+    def __repr__(self):
+        pass  # TODO: add category listing
 
 
 class RecallStorage:  # *SQLite
