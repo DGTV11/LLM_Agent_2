@@ -16,3 +16,5 @@ DEBUG_MODE = True if CONFIG["DEBUG_MODE"].strip().lower() == "true" else False
 
 WARNING_TOK_FRAC = float(CONFIG.get("WARNING_TOK_FRAC", "0.8"))
 FLUSH_TOK_FRAC = float(CONFIG.get("FLUSH_TOK_FRAC", "0.95"))
+
+PERSONA_MAX_WORDS = int(CONFIG.get("PERSONA_MAX_WORDS", "100"))
