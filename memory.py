@@ -243,6 +243,14 @@ class ArchivalStorage:  # *ChromaDB
     def __init__(self, agent_id: str) -> None:
         pass
 
+    @property
+    def categories(self):
+        pass
+
+    @property
+    def no_items(self):
+        pass
+
     def archival_insert(self, content: str, category: str) -> None:
         pass
 
