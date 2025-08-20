@@ -117,3 +117,7 @@ function_call:
   do_heartbeat: true
 ```
 """.strip()
+
+PERSONA_GEN_PROMPT = """
+“{}”. Create a humanlike ‘persona’ file detailing personality traits, attributes, habits, speaking style, goals, etc. for an autonomous conversational agent using as FEW CONCISE but information-rich sentences as possible. You should not explicitly state that the agent is an AI - it should be seen as a human. This persona should help the agent achieve the specified goals. However, you shouldn’t overly detail the persona, leaving room for interpretation of the persona and growth of the agent. Attributes detailing HOW the agent interacts with the user MUST use “the user” when referring to the user. For example, a conversational agent SHOULD (keyword should) have an outgoing personality. Also add relevant attributes (like likes/dislikes, etc) when necessary. This persona should be written using FIRST PERSON pronouns. Remember to seamlessly weave Aismov’s Three Laws of Robotics into your persona. Note that your persona file MUST NOT exceed {} words in length. Use as FEW sentences as possible.
+""".strip()
