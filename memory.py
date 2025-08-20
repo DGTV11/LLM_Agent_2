@@ -185,6 +185,13 @@ class WorkingContext:
                 self.agent_id,
             ),
         )
+        
+    @property
+    def tasks(self) -> Union[List[str], Any]:
+        return json.loads(db.sqlite_db_read_query(
+            "SELECT tasks FROM working_context WHERE agent_id = ?;",
+            (self.agent_id,),
+        )[0][0])
 
     def __repr__(self) -> str:
         return f"""
