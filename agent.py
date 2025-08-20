@@ -3,12 +3,12 @@ from pocketflow import *
 from memory import Memory
 
 
-class ExitNode(Node):
+class ExitHeartbeatLoop(Node):
     def exec(prep_res):
         print("No heartbeat requested, exiting agent loop")
 
 
-class AgentNode(Node):
+class CallAgent(Node):
     def prep(self, shared):
         return shared["memory"]  # TODO
 
@@ -20,13 +20,13 @@ class AgentNode(Node):
         shared["draft"] = exec_res
 
 
-agent_node = AgentNode()
+call_agent_node = CallAgent()
 
 
 class Agent:
     def __init__(self, memory: Memory):
         # TODO: add function set adding
-        flow = Flow(start=agent_node)
+        flow = Flow(start=call_agent_node)
 
 
 def agent_step(agent: Agent):
