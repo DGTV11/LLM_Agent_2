@@ -148,7 +148,6 @@ class Message:
 
 @dataclass()
 class WorkingContext:
-    tasks: Queue[str]  # *To add functions for pushing and popping this queue
     agent_id: str
 
     @property
@@ -184,33 +183,41 @@ class WorkingContext:
                 self.agent_id,
             ),
         )
-        
+
     @property
     def tasks(self) -> Union[List[str], Any]:
-        return json.loads(db.sqlite_db_read_query(
-            "SELECT tasks FROM working_context WHERE agent_id = ?;",
-            (self.agent_id,),
-        )[0][0])
-        
+        return json.loads(
+            db.sqlite_db_read_query(
+                "SELECT tasks FROM working_context WHERE agent_id = ?;",
+                (self.agent_id,),
+            )[0][0]
+        )
+
     def push_task(self, task: str) -> None:
         db.sqlite_db_write_query(
             "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
-            (json.dumps(self.tasks+[str]), self.agent_id,),
+            (
+                json.dumps(self.tasks + [str]),
+                self.agent_id,
+            ),
         )
-        
+
     def pop_task(self) -> str:
         tasks = self.tasks
-        
+
         if len(tasks) == 0:
             raise ValueError("Task queue empty!")
-            
+
         task_queue = deque(tasks)
         popped_task = task_queue.popleft()
         db.sqlite_db_write_query(
             "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
-            (json.dumps(list(task_queue)), self.agent_id,),
+            (
+                json.dumps(list(task_queue)),
+                self.agent_id,
+            ),
         )
-        
+
         return popped_task
 
     def __repr__(self) -> str:
@@ -298,10 +305,10 @@ class FIFOQueue:
             "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
             (self.agent_id,),
         )
-        
+
         if len(db_res) == 0:
             raise ValueError("Message queue empty!")
-        
+
         id, agent_id, message_type, timestamp, content = db_res[0]
 
         db.sqlite_db_write_query(

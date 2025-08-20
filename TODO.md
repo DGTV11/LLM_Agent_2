@@ -1,8 +1,8 @@
 1. Implement memory subsystems (link to DB)
     - [x] FIFO Queue
-    - [ ] Working Context
-    - [ ] Recall Storage
+    - [x] Working Context
     - [ ] Archival Storage
+    - [ ] Recall Storage
     - [ ] Context Summariser
 2. Implement function loader (use Pydantic model and desc -> yaml schema)+functions (Nodes)
     - use shared state for agent state
