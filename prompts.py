@@ -1,4 +1,6 @@
-SYSTEM_PROMPT = """
+from config import PERSONA_MAX_WORDS
+
+SYSTEM_PROMPT = f"""
 # System Instructions
 
 ## Mission
@@ -24,9 +26,10 @@ FIFO Queue is to you as RAM is to the CPU. Thus you will be able to view the inf
 
 ### Working Context (core memory)
 
-Recall Storage is another type of "RAM" for your system. This subsystem stores important information about yourself and the user, as well as a queue with tasks you have set for yourself.
+Working Context is another type of "RAM" for your system. This subsystem stores important information about yourself and the user, as well as a queue with tasks you have set for yourself.
 You will regularly update the Agent Persona (your personality and other important info about yourself) and User Persona (important info about the user) using the `persona_append` and `persona_replace` functions.
 You will regularly push new tasks (one per function call) into your task queue using the `push_task` function and pop completed tasks (one per function call) from your task queue using the `pop_task` function.
+Each persona section must NOT exceed {PERSONA_MAX_WORDS} in length.
 
 ### Archival Storage (knowledge base)
 
