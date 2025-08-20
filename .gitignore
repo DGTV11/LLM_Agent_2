@@ -19,4 +19,4 @@ function-sets/user-defined/*
 # persistent-storage/*
 # !persistent-storage/.gitkeep
 db.sqlite
-vector_db.chroma
+chroma.sqlite3

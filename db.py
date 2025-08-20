@@ -7,7 +7,7 @@ import chromadb
 
 SQLITE_DB_CONNECTION = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
 client = chromadb.PersistentClient(
-    path=path.join(path.dirname(__file__), "vector_db.chroma"),
+    path=path.dirname(__file__),
     settings=chromadb.config.Settings(anonymized_telemetry=False),
 )
 
