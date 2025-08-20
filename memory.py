@@ -2,7 +2,6 @@ import json
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
-from queue import Queue
 from typing import Any, Deque, Dict, List, Literal, Tuple, Union
 from uuid import uuid4
 
@@ -155,14 +154,14 @@ class WorkingContext:
     @property
     def agent_persona(self) -> Union[str, Any]:
         return db.sqlite_db_read_query(
-            "SELECT agent_persona FROM agents WHERE agent_id = ?;",
+            "SELECT agent_persona FROM working_context WHERE agent_id = ?;",
             (self.agent_id,),
         )[0][0]
 
     @agent_persona.setter
     def agent_persona(self, value: str) -> None:
         db.sqlite_db_write_query(
-            "UPDATE agents SET agent_persona = ? WHERE agent_id = ?;",
+            "UPDATE working_context SET agent_persona = ? WHERE agent_id = ?;",
             (
                 value,
                 self.agent_id,
@@ -172,14 +171,14 @@ class WorkingContext:
     @property
     def user_persona(self) -> Union[str, Any]:
         return db.sqlite_db_read_query(
-            "SELECT user_persona FROM agents WHERE agent_id = ?;",
+            "SELECT user_persona FROM working_context WHERE agent_id = ?;",
             (self.agent_id,),
         )[0][0]
 
     @user_persona.setter
     def user_persona(self, value: str) -> None:
         db.sqlite_db_write_query(
-            "UPDATE agents SET user_persona = ? WHERE agent_id = ?;",
+            "UPDATE working_context SET user_persona = ? WHERE agent_id = ?;",
             (
                 value,
                 self.agent_id,
@@ -192,6 +191,27 @@ class WorkingContext:
             "SELECT tasks FROM working_context WHERE agent_id = ?;",
             (self.agent_id,),
         )[0][0])
+        
+    def push_task(self, task: str) -> None:
+        db.sqlite_db_write_query(
+            "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
+            (json.dumps(self.tasks+[str]), self.agent_id,),
+        )
+        
+    def pop_task(self) -> str:
+        tasks = self.tasks
+        
+        if len(tasks) == 0:
+            raise ValueError("Task queue empty!")
+            
+        task_queue = deque(tasks)
+        popped_task = task_queue.popleft()
+        db.sqlite_db_write_query(
+            "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
+            (json.dumps(list(task_queue)), self.agent_id,),
+        )
+        
+        return popped_task
 
     def __repr__(self) -> str:
         return f"""
