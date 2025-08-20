@@ -2,4 +2,4 @@
 
 A rewrite of LLM_Agent
 
-Based on ![MemGPT](https://arxiv.org/abs/2310.08560)
+Based on ![MemGPT][https://arxiv.org/abs/2310.08560]
