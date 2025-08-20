@@ -231,15 +231,15 @@ class WorkingContext:
 
     def __repr__(self) -> str:
         return f"""
-## Agent Persona
+### Agent Persona
 
 {self.agent_persona}
 
-## User Persona
+### User Persona
 
 {self.user_persona}
 
-## Task Queue
+### Task Queue
 
 {self.tasks}
 """.strip()
