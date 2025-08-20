@@ -9,6 +9,7 @@ import yaml
 
 import db
 from prompts import SYSTEM_PROMPT
+from config import PERSONA_MAX_WORDS
 
 
 # *Messages
@@ -159,6 +160,10 @@ class WorkingContext:
 
     @agent_persona.setter
     def agent_persona(self, value: str) -> None:
+        new_persona_length = len(value.split())
+        if new_persona_length > PERSONA_MAX_WORDS:
+            raise ValueError(f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})")
+            
         db.sqlite_db_write_query(
             "UPDATE working_context SET agent_persona = ? WHERE agent_id = ?;",
             (
@@ -176,6 +181,10 @@ class WorkingContext:
 
     @user_persona.setter
     def user_persona(self, value: str) -> None:
+        new_persona_length = len(value.split())
+        if new_persona_length > PERSONA_MAX_WORDS:
+            raise ValueError(f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})")
+            
         db.sqlite_db_write_query(
             "UPDATE working_context SET user_persona = ? WHERE agent_id = ?;",
             (
