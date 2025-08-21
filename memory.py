@@ -1,15 +1,16 @@
 import json
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Deque, Dict, List, Literal, Tuple, Union
+from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
 import yaml
+from semantic_text_splitter import TextSplitter
 
 import db
+from config import CHUNK_MAX_TOKENS, PERSONA_MAX_WORDS
 from prompts import SYSTEM_PROMPT
-from config import PERSONA_MAX_WORDS
 
 
 # *Messages
@@ -162,8 +163,10 @@ class WorkingContext:
     def agent_persona(self, value: str) -> None:
         new_persona_length = len(value.split())
         if new_persona_length > PERSONA_MAX_WORDS:
-            raise ValueError(f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})")
-            
+            raise ValueError(
+                f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
+            )
+
         db.sqlite_db_write_query(
             "UPDATE working_context SET agent_persona = ? WHERE agent_id = ?;",
             (
@@ -183,8 +186,10 @@ class WorkingContext:
     def user_persona(self, value: str) -> None:
         new_persona_length = len(value.split())
         if new_persona_length > PERSONA_MAX_WORDS:
-            raise ValueError(f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})")
-            
+            raise ValueError(
+                f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
+            )
+
         db.sqlite_db_write_query(
             "UPDATE working_context SET user_persona = ? WHERE agent_id = ?;",
             (
@@ -206,7 +211,7 @@ class WorkingContext:
         db.sqlite_db_write_query(
             "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
             (
-                json.dumps(self.tasks + [str]),
+                json.dumps(self.tasks + [task]),
                 self.agent_id,
             ),
         )
@@ -218,7 +223,7 @@ class WorkingContext:
             raise ValueError("Task queue empty!")
 
         task_queue = deque(tasks)
-        popped_task = task_queue.popleft()
+        popped_task = str(task_queue.popleft())
         db.sqlite_db_write_query(
             "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
             (
@@ -248,31 +253,75 @@ class WorkingContext:
 @dataclass
 class ArchivalStorage:  # *ChromaDB
     agent_id: str
+    collection: Any = field(init=False)
 
-    def __init__(self, agent_id: str) -> None:
-        pass
+    def __post_init__(self) -> None:
+        self.collection = db.CHROMA_DB_CLIENT.get_or_create_collection(
+            name=self.agent_id
+        )
+
+    def __len__(self) -> Union[int, Any]:
+        return self.collection.count()
 
     @property
-    def categories(self):
-        pass
+    def categories(self) -> List[str]:
+        categories_set = set()
 
-    @property
-    def no_items(self):
-        pass
+        batch_size = 50
+        for i in range(0, len(self), batch_size):
+            batch = self.collection.get(
+                include=["metadatas"],
+                limit=batch_size,
+                offset=i,
+            )
+            categories_set |= set(map(lambda m: m["category"], batch["metadatas"]))
+
+        return list(categories_set)
 
     def archival_insert(self, content: str, category: str) -> None:
-        pass
+        splitter = TextSplitter.from_tiktoken_model("gpt-3.5-turbo", CHUNK_MAX_TOKENS)
+        chunks = splitter.chunks(content)
 
-    def archival_search(self, query: str, category: str | None):
-        pass
+        self.collection.add(
+            ids=[str(uuid4()) for _ in range(len(chunks))],
+            documents=chunks,
+            metadatas=[
+                {"category": category, "timestamp": datetime.now().isoformat()},
+            ]
+            * len(chunks),
+        )
 
-    def __repr__(self):
-        pass  # TODO: add category listing
+    def archival_search(
+        self, query: str, offset: int, count: int, category: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        query_res = self.collection.query(
+            query_texts=[query],
+            include=["documents", "metadatas"],
+            offset=offset,
+            n_results=count,
+            where={"category": category},
+        )
+        page_tuples = zip(*query_res.values)
+        page_dicts = [
+            {"document": document, "metadata": metadata}
+            for document, metadata in page_tuples
+        ]
+
+        return page_dicts
+
+    def __repr__(self) -> str:
+        return f"""
+Archival storage contains {len(self)} entries
+Categories: {self.categories}
+""".strip()
 
 
 class RecallStorage:  # *SQLite
     def __init__(self, agent_id: str) -> None:
         pass
+
+
+# TODO: add date filtering
 
 
 # * Function sets (TBD)
@@ -281,6 +330,9 @@ class RecallStorage:  # *SQLite
 class FunctionSets:
     def __init__(self, agent_id: str) -> None:
         pass
+
+
+# TODO
 
 
 @dataclass

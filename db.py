@@ -6,7 +6,8 @@ from typing import Any, List, Optional, Tuple, Union
 import chromadb
 
 SQLITE_DB_CONNECTION = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
-client = chromadb.PersistentClient(
+
+CHROMA_DB_CLIENT = chromadb.PersistentClient(
     path=path.dirname(__file__),
     settings=chromadb.config.Settings(anonymized_telemetry=False),
 )
