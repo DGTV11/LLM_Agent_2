@@ -14,10 +14,12 @@ class GeneratePersona(Node):
 
     def exec(self, goals):
         resp = call_llm(
-            {
-                "role": "user",
-                "content": PERSONA_GEN_PROMPT.format(goals, PERSONA_MAX_WORDS),
-            }
+            [
+                {
+                    "role": "user",
+                    "content": PERSONA_GEN_PROMPT.format(goals, PERSONA_MAX_WORDS),
+                }
+            ]
         )
 
         yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
@@ -44,3 +46,17 @@ def generate_persona(goals: str) -> str:
 
     return shared["persona"]
 
+
+if __name__ == "__main__":
+    print("THIS IS A TEST FOR persona_gen.py")
+
+    assert input("DO YOU WISH TO PROCEED? (y/n) ").strip() == "y", "abort"
+
+    goals = (
+        input(
+            'Input goals (if blank, default "Provide companionship to the user" will be used): '
+        ).strip()
+        or "Provide companionship to the user"
+    )
+
+    print(generate_persona(goals))

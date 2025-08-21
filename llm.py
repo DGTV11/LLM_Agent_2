@@ -1,4 +1,4 @@
-from debug import printd
+# from debug import printd
 from openai import OpenAI
 
 from config import (
