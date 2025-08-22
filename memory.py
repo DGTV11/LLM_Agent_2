@@ -316,9 +316,34 @@ Categories: {self.categories}
 """.strip()
 
 
+@dataclass
 class RecallStorage:  # *SQLite
-    def __init__(self, agent_id: str) -> None:
-        pass
+    agent_id: str
+
+    def __len__(self) -> int:
+        return len(
+            db.sqlite_db_read_query(
+                "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ?",
+                (self.agent_id,),
+            )
+        )
+
+    def push_message(self, message: Message) -> None:
+        message_intermediate = message.to_intermediate_repr()
+
+        db.sqlite_db_write_query(
+            """
+            INSERT INTO recall_storage (id, agent_id, message_type, timestamp, content)
+            (?, ?, ?, ?, ?);
+            """,
+            (
+                str(uuid4()),
+                self.agent_id,
+                message_intermediate["message_type"],
+                message_intermediate["timestamp"],
+                json.dumps(message_intermediate["content"]),
+            ),
+        )
 
 
 # TODO: add date filtering
@@ -429,7 +454,8 @@ class Memory:
 
 ## Recall Storage
 
-{self.recall_storage}
+{len(self.fifo_queue)} messages in FIFO Queue
+{len(self.recall_storage)} messages in Recall Storage ({len(self.recall_storage) - len(self.fifo_queue)} previous messages evicted from FIFO Queue)
 
 # Function Schemas
 

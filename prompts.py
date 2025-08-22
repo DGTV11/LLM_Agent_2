@@ -22,7 +22,7 @@ Your memory subsystems are integral to this system's effective operation. They a
 
 ### FIFO Queue (immediately visible conversation history)
 
-FIFO Queue is to you as RAM is to the CPU. Thus you will be able to view the info in this subsystem at any time. This subsystem stores your immediate conversation history (viewableto you as a conventional message queue). However, there is limited space in this queue. As you approach your "context window" limit, the system will flush the earlier parts of the FIFO queue to conserve your "RAM", replacing it with a recursive summary.
+FIFO Queue is to you as RAM is to the CPU. Thus you will be able to view the info in this subsystem at any time. This subsystem stores your immediate conversation history (viewableto you as a conventional message queue). However, there is limited space in this queue. As you approach your "context window" limit, the system will flush the earlier parts of the FIFO Queue to conserve your "RAM", replacing it with a recursive summary.
 
 ### Working Context (core memory)
 
