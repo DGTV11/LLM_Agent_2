@@ -134,7 +134,7 @@ class Message:
                 )
             case "function_res":
                 return Message(
-                    message_type="system",
+                    message_type="function_res",
                     timestamp=datetime.fromisoformat(intermediate_repr["timestamp"]),
                     content=FunctionResultContent(
                         success=intermediate_repr["content"]["success"],
@@ -345,8 +345,37 @@ class RecallStorage:  # *SQLite
             ),
         )
 
+    def text_search(self, query_text: str):
+        message_list = []
+        for message_type, timestamp, content in db.sqlite_db_read_query(
+            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND content LIKE '%?%'",
+            (self.agent_id, query_text),
+        ):
+            message_dict = {
+                "message_type": message_type,
+                "timestamp": timestamp,
+                "content": json.loads(content),
+            }
 
-# TODO: add date filtering
+            message_list.append(Message.from_intermediate_repr(message_dict))
+
+        return message_list
+
+    def date_search(self, start_timestamp: str, end_timestamp: str):
+        message_list = []
+        for message_type, timestamp, content in db.sqlite_db_read_query(
+            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN '?' AND '?'",
+            (self.agent_id, start_timestamp, end_timestamp),
+        ):
+            message_dict = {
+                "message_type": message_type,
+                "timestamp": timestamp,
+                "content": json.loads(content),
+            }
+
+            message_list.append(Message.from_intermediate_repr(message_dict))
+
+        return message_list
 
 
 # * Function sets (TBD)
@@ -460,6 +489,10 @@ class Memory:
 # Function Schemas
 
 {self.function_sets}
+
+# Current datetime (in ISO 8601 format)
+
+{datetime.now().isoformat()}
 """.strip()
 
     def get_system_prompt(self) -> str:
