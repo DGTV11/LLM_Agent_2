@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import yaml
 from pocketflow import *
 
@@ -7,10 +9,13 @@ from prompts import PERSONA_GEN_PROMPT
 
 
 class GeneratePersona(Node):
-    def prep(self, shared):
+    def prep(self, shared: Dict[str, Any]) -> str:
+        goals = shared["goals"]
+        assert isinstance(goals, str)
+
         return shared["goals"]
 
-    def exec(self, goals):
+    def exec(self, goals: str) -> str:
         resp = call_llm(
             [
                 {
@@ -27,10 +32,9 @@ class GeneratePersona(Node):
         assert "persona" in result
         assert isinstance(result["persona"], str)
         assert len(result["persona"].split()) <= PERSONA_MAX_WORDS
-
         return result["persona"]
 
-    def post(self, shared, prep_res, exec_res):
+    def post(self, shared: Dict[str, Any], prep_res: str, exec_res: str) -> None:
         shared["persona"] = exec_res
 
 

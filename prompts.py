@@ -137,7 +137,6 @@ Output in yaml (including starting "```yaml" and closing "```" at start and end 
 analysis: detailed step-by-step analysis of the conversation history (ONE string)
 summary: output recursive summary (ONE string)
 ```
-
 """.strip()
 
 PERSONA_GEN_PROMPT = """

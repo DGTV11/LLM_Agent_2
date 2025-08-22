@@ -13,4 +13,8 @@ dependencies = [
     "pocketflow>=0.0.3",
     "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
+    "semantic-text-splitter>=0.27.0",
+    "transformers>=4.55.3",
+    "types-pyyaml>=6.0.12.20250822",
+    "types-transformers>=0.1.0",
 ]

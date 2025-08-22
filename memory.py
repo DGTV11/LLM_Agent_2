@@ -6,11 +6,12 @@ from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
 import yaml
+from pocketflow import *
 from semantic_text_splitter import TextSplitter
 
 import db
-from config import CHUNK_MAX_TOKENS, CTX_WINDOW, PERSONA_MAX_WORDS
-from llm import call_llm
+from config import CHUNK_MAX_TOKENS, CTX_WINDOW, FLUSH_TGT_TOK_FRAC, PERSONA_MAX_WORDS
+from llm import call_llm, llm_tokenise
 from prompts import RECURSIVE_SUMMARY_PROMPT, SYSTEM_PROMPT
 
 
@@ -346,7 +347,7 @@ class RecallStorage:  # *SQLite
             ),
         )
 
-    def text_search(self, query_text: str):
+    def text_search(self, query_text: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
             "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND content LIKE '%?%'",
@@ -362,7 +363,7 @@ class RecallStorage:  # *SQLite
 
         return message_list
 
-    def date_search(self, start_timestamp: str, end_timestamp: str):
+    def date_search(self, start_timestamp: str, end_timestamp: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
             "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN '?' AND '?'",
@@ -389,8 +390,9 @@ class FunctionSets:
 
 # TODO
 
+# * Queue
 
-# *Queue
+
 @dataclass
 class FIFOQueue:
     agent_id: str
@@ -467,15 +469,18 @@ class FIFOQueue:
         return last_message
 
 
-class SummariseEvictedMessages(Node):
-    def prep(self, shared):
-        return shared["evicted_messages"]
+class GenerateNewRecursiveSummary(Node):
+    def prep(self, shared: Dict[str, Any]) -> List[str]:
+        evicted_message_strs = shared["evicted_message_strs"]
+        assert isinstance(evicted_message_strs, list)
 
-    def exec(self, evicted_messages):
+        return evicted_message_strs
+
+    def exec(self, evicted_message_strs: List[str]) -> str:
         resp = call_llm(
             [
                 {"role": "system", "content": RECURSIVE_SUMMARY_PROMPT},
-                {"role": "user", "content": "\n\n".join(evicted_messages)},
+                {"role": "user", "content": "\n\n".join(evicted_message_strs)},
             ]
         )
 
@@ -488,11 +493,11 @@ class SummariseEvictedMessages(Node):
 
         return result["summary"]
 
-    def post(self, shared, prep_res, exec_res):
+    def post(self, shared: Dict[str, Any], prep_res: List[str], exec_res: str) -> None:
         shared["summary"] = exec_res
 
 
-summarise_evicted_messages_node = SummariseEvictedMessages(max_retries=10)
+generate_new_recursive_summary_node = GenerateNewRecursiveSummary(max_retries=10)
 
 
 # *Memory obj
@@ -520,17 +525,23 @@ class Memory:
 ## Recall Storage
 
 {len(self.fifo_queue)} messages in FIFO Queue
-{len(self.recall_storage)} messages in Recall Storage ({len(self.recall_storage) - len(self.fifo_queue)} previous messages evicted from FIFO Queue and hidden from view)
+{len(self.recall_storage)} messages in Recall Storage ({len(self.recall_storage) - len(self.fifo_queue)} previous messages evicted from FIFO Queue)
 
 # Function Schemas
 
 {self.function_sets}
+
+# Current datetime (in ISO 8601 format)
+
+{datetime.now().isoformat()}
 """.strip()
 
-    def get_system_prompt(self) -> str:
+    @property
+    def system_prompt(self) -> str:
         return "\n\n".join([SYSTEM_PROMPT, repr(self)])
 
-    def get_recursive_summary_and_summary_timestamp(self) -> Tuple[str, datetime]:
+    @property
+    def recursive_summary_and_summary_timestamp(self) -> Tuple[str, datetime]:
         rs, rsut_txt = db.sqlite_db_read_query(
             "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE agent_id = ?;",
             (self.agent_id,),
@@ -538,12 +549,13 @@ class Memory:
 
         return rs, datetime.fromisoformat(rsut_txt)
 
-    def get_llm_ctx(self) -> List[Dict[str, str]]:
-        processed_messages = [{"role": "system", "content": self.get_system_prompt()}]
+    @property
+    def llm_ctx(self) -> List[Dict[str, str]]:
+        processed_messages = [{"role": "system", "content": self.system_prompt}]
 
         last_userside_messages = []
 
-        rs, rsut = self.get_recursive_summary_and_summary_timestamp()
+        rs, rsut = self.recursive_summary_and_summary_timestamp
 
         for msg in (
             [
@@ -561,15 +573,15 @@ class Memory:
             ]
             + self.fifo_queue.messages
         ):
-            msg_std = msg.to_std_message_format()
-            if msg_std["role"] == "user":
-                last_userside_messages.append(msg_std["content"])
+            msg_intermediate = msg.to_std_message_format()
+            if msg_intermediate["role"] == "user":
+                last_userside_messages.append(msg_intermediate["content"])
             else:
                 processed_messages.append(
                     {"role": "user", "content": "\n\n".join(last_userside_messages)}
                 )
                 processed_messages.append(
-                    {"role": "assistant", "content": msg_std["content"]}
+                    {"role": "assistant", "content": msg_intermediate["content"]}
                 )
                 last_userside_messages = []
 
@@ -581,13 +593,13 @@ class Memory:
         return processed_messages
 
     @property
-    def no_tokens(self) -> int:  # TODO
-        pass
+    def in_ctx_no_tokens(self) -> int:
+        return len(llm_tokenise(self.llm_ctx))
 
     def flush_fifo_queue(self, tgt_token_frac: float) -> None:
-        # *Evict messages
+        rs, rsut = self.recursive_summary_and_summary_timestamp
 
-        evicted_messages = [
+        evicted_message_strs = [
             yaml.dump(
                 Message(
                     message_type="system",
@@ -604,26 +616,24 @@ class Memory:
         ]
 
         while (
-            self.no_tokens > (CTX_WINDOW * tgt_token_frac)
-            or self.fifo_queue.peek_message().message_type == "assistant"
+            self.in_ctx_no_tokens > FLUSH_TGT_TOK_FRAC * CTX_WINDOW
+            or self.fifo_queue.peek_message().message_type != "user"
         ):
-            evicted_messages.append(yaml.dump(self.fifo_queue.pop_message()).strip())
+            evicted_message_strs.append(
+                yaml.dump(self.fifo_queue.pop_message().to_intermediate_repr()).strip()
+            )
 
-        # *Summarise evicted messages
+        shared = {"evicted_message_strs": evicted_message_strs}
 
-        shared = {"evicted_messages": evicted_messages}
-
-        summarise_evicted_messages_node.run(shared)
+        generate_new_recursive_summary_node.run(shared)
 
         new_summary = shared["summary"]
 
-        # *Save new summary
-
         db.sqlite_db_write_query(
-            "UPDATE agent SET recursive_summary = ?, recursive_summary_update_time = ? WHERE agent_id = ?;",
+            "UPDATE agents SET recursive_summary = ?, recursive_summary_update_time = ? WHERE agent_id = ?",
             (
                 new_summary,
-                datetime.now().timestamp(),
+                datetime.now().isoformat(),
                 self.agent_id,
             ),
         )
