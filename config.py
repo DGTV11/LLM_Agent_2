@@ -14,11 +14,13 @@ DEBUG_MODE = (
     True if (CONFIG.get("DEBUG_MODE") or "false").strip().lower() == "true" else False
 )
 
+CTX_WINDOW = int(CONFIG.get("CTX_WINDOW") or "8192")
+
 CHUNK_MAX_TOKENS = int(CONFIG.get("CHUNK_MAX_TOKENS") or "128")
 
 WARNING_TOK_FRAC = float(CONFIG.get("WARNING_TOK_FRAC") or "0.8")
 FLUSH_TOK_FRAC = float(CONFIG.get("FLUSH_TOK_FRAC") or "0.95")
+FLUSH_TGT_TOK_FRAC = float(CONFIG.get("FLUSH_TGT_TOK_FRAC") or "0.75")
 
 PAGE_SIZE = int(CONFIG.get("PAGE_SIZE") or "10")
 PERSONA_MAX_WORDS = int(CONFIG.get("PERSONA_MAX_WORDS") or "100")
-

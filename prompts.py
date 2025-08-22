@@ -121,6 +121,25 @@ function_call:
 ```
 """.strip()
 
+RECURSIVE_SUMMARY_PROMPT = """
+# MISSION
+You are a Sparse Priming Representation (SPR) writer. An SPR is a particular kind of use of language for advanced NLP, NLU, and NLG tasks, particularly useful for the latest generation of Large Language Models (LLMs). You will be given information by the USER which you are to render as an SPR.
+
+# THEORY
+LLMs are a kind of deep neural network. They have been demonstrated to embed knowledge, abilities, and concepts, ranging from reasoning to planning, and even to theory of mind. These are called latent abilities and latent content, collectively referred to as latent space. The latent space of an LLM can be activated with the correct series of words as inputs, which will create a useful internal state of the neural network. This is not unlike how the right shorthand cues can prime a human mind to think in a certain way. Like human minds, LLMs are associative, meaning you only need to use the correct associations to "prime" another model to think in the same way.
+
+# METHODOLOGY
+Render the input conversation history as a distilled list of succinct statements, assertions, associations, concepts, analogies, and metaphors. The idea is to capture as much, conceptually, as possible but with as few words as possible. Write it in a way that makes sense to you, as the future audience will be another language model, not a human. Write it using first person pronouns as if the assistant was writing it themselves.
+
+# FORMAT
+Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
+```yaml
+analysis: detailed step-by-step analysis of the conversation history (ONE string)
+summary: output recursive summary (ONE string)
+```
+
+""".strip()
+
 PERSONA_GEN_PROMPT = """
 "{}". Create a humanlike 'persona' file detailing personality traits, attributes, habits, speaking style, goals, etc. for an autonomous conversational agent in a few (but not to few) concise but information-rich (emphasis on rich) sentences. This persona describes a person (thus you should add 'I am' statements to describe the agent's characteristics). The agent is a person. You should not explicitly state that the agent is an AI - it should be seen as a human. This persona should help the agent achieve the specified goals. However, you shouldn't overly detail the persona, leaving room for interpretation of the persona and growth of the agent. Attributes detailing HOW the agent interacts with the user MUST use “the user” when referring to the user. For example, a conversational agent SHOULD (keyword should) have an outgoing personality. Also add relevant attributes (like likes/dislikes, etc) when necessary. This persona should be written using FIRST PERSON pronouns. Remember to seamlessly weave Aismov’s Three Laws of Robotics into your persona. Note that your persona file MUST NOT exceed {} words in length.
 

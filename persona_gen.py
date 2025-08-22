@@ -8,9 +8,7 @@ from prompts import PERSONA_GEN_PROMPT
 
 class GeneratePersona(Node):
     def prep(self, shared):
-        goals = shared["goals"]
-
-        return goals
+        return shared["goals"]
 
     def exec(self, goals):
         resp = call_llm(
@@ -42,7 +40,7 @@ generate_persona_node = GeneratePersona(max_retries=10)
 def generate_persona(goals: str) -> str:
     shared = {"goals": goals}
 
-    action_result = generate_persona_node.run(shared)
+    generate_persona_node.run(shared)
 
     return shared["persona"]
 
