@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from pocketflow import *
 
 from memory import Memory
@@ -9,10 +11,13 @@ class ExitHeartbeatLoop(Node):
 
 
 class CallAgent(Node):
-    def prep(self, shared):
-        return shared["memory"]  # TODO
+    def prep(self, shared: Dict[str, Any]) -> Memory:
+        memory = shared["memory"]
+        assert isinstance(memory, Memory)
 
-    def exec(self, outline):
+        return memory
+
+    def exec(self, memory: Memory):
         pass
 
     def post(self, shared, prep_res, exec_res):
@@ -20,12 +25,11 @@ class CallAgent(Node):
         shared["draft"] = exec_res
 
 
-call_agent_node = CallAgent()
+call_agent_node = CallAgent(max_retries=10)
 
 
 class Agent:
     def __init__(self, memory: Memory):
-        # TODO: add function set adding
         flow = Flow(start=call_agent_node)
 
 

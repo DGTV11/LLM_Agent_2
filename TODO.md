@@ -3,7 +3,7 @@
     - [x] Working Context
     - [x] Archival Storage
     - [x] Recall Storage
-2. [ ] Context Summariser
+2. [x] Context Summariser
 3. Implement function loader (use Pydantic model and desc -> yaml schema)+functions (Nodes)
     - use shared state for agent state
     - dynamically load functions using `agent_node - func_name >> function_node` for loop
