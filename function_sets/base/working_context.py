@@ -23,7 +23,10 @@ class PersonaAppend(FunctionNode):
     validator = PersonaAppendValidator
 
     def exec_function(
-        self, memory: Memory, arguments_validated: PersonaAppendValidator
+        self,
+        memory: Memory,
+        conn: Connection,
+        arguments_validated: PersonaAppendValidator,
     ) -> Message:
         match arguments_validated.section:
             case "user":
@@ -57,7 +60,10 @@ class PersonaReplace(FunctionNode):
     validator = PersonaReplaceValidator
 
     def exec_function(
-        self, memory: Memory, arguments_validated: PersonaReplaceValidator
+        self,
+        memory: Memory,
+        conn: Connection,
+        arguments_validated: PersonaReplaceValidator,
     ) -> Message:
         match arguments_validated.section:
             case "user":
@@ -95,7 +101,7 @@ class PushTask(FunctionNode):
     validator = PushTaskValidator
 
     def exec_function(
-        self, memory: Memory, arguments_validated: PushTaskValidator
+        self, memory: Memory, conn: Connection, arguments_validated: PushTaskValidator
     ) -> Message:
         memory.working_context.push_task(arguments_validated.task)
 
@@ -121,7 +127,7 @@ class PopTask(FunctionNode):
     validator = PopTaskValidator
 
     def exec_function(
-        self, memory: Memory, arguments_validated: PushTaskValidator
+        self, memory: Memory, conn: Connection, arguments_validated: PushTaskValidator
     ) -> Message:
         popped_task = memory.working_context.pop_task()
 

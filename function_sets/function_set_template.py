@@ -20,7 +20,10 @@ class ExampleFunc(FunctionNode):
     validator = ExampleFuncValidator
 
     def exec_function(
-        self, memory: Memory, arguments_validated: ExampleFuncValidator
+        self,
+        memory: Memory,
+        conn: Connection,
+        arguments_validated: ExampleFuncValidator,
     ) -> Message:
         # *Do something here
 

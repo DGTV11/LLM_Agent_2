@@ -47,9 +47,9 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
         memory, _, arguments = inputs
         arguments_validated = self.validator.model_validate(arguments)
 
-        return self.exec_function(memory, arguments_validated)
+        return self.exec_function(memory, conn, arguments_validated)
 
-    def exec_function(self, memory: Memory, arguments_validated: Any):
+    def exec_function(self, memory: Memory, conn: Connection, arguments_validated: Any):
         pass
 
     def exec_fallback(
