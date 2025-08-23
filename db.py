@@ -40,6 +40,7 @@ def sqlite_db_read_query(
 
 # *Init SQLite DB
 
+## *Agents
 sqlite_db_write_query(
     """
     CREATE TABLE IF NOT EXISTS agents (

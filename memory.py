@@ -6,12 +6,13 @@ from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
 import yaml
-from pocketflow import *
+from pocketflow import Node
 from pydantic import BaseModel
 from semantic_text_splitter import TextSplitter
 
 import db
 from config import CHUNK_MAX_TOKENS, CTX_WINDOW, FLUSH_TGT_TOK_FRAC, PERSONA_MAX_WORDS
+from function_sets import FunctionSets
 from llm import call_llm, llm_tokenise
 from prompts import RECURSIVE_SUMMARY_PROMPT, SYSTEM_PROMPT
 
@@ -351,7 +352,7 @@ class RecallStorage:  # *SQLite
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND content LIKE '%?%'",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND content LIKE '%?%'",
             (self.agent_id, query_text),
         ):
             message_dict = {
@@ -367,7 +368,7 @@ class RecallStorage:  # *SQLite
     def date_search(self, start_timestamp: str, end_timestamp: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN '?' AND '?'",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN '?' AND '?'",
             (self.agent_id, start_timestamp, end_timestamp),
         ):
             message_dict = {
@@ -380,16 +381,6 @@ class RecallStorage:  # *SQLite
 
         return message_list
 
-
-# * Function sets (TBD)
-
-
-class FunctionSets:
-    def __init__(self, agent_id: str) -> None:
-        pass
-
-
-# TODO
 
 # * Queue
 
@@ -533,10 +524,6 @@ class Memory:
 # Function Schemas
 
 {self.function_sets}
-
-# Current datetime (in ISO 8601 format)
-
-{datetime.now().isoformat()}
 """.strip()
 
     @property
