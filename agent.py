@@ -60,8 +60,7 @@ class CallAgent(Node):
             "content": exec_res.model_dump(),
         }
         agent_message_obj = Message.from_intermediate_repr(agent_message_dict)
-        memory.fifo_queue.push_message(agent_message_obj)
-        memory.recall_storage.push_message(agent_message_obj)
+        memory.push_message(agent_message_obj)
 
         conn.send(json.dumps({"message": agent_message_dict}))
 
@@ -83,6 +82,7 @@ class Agent:
         self.memory = memory
 
         call_agent_node = CallAgent(max_retries=10)
+        function_node_dict = self.memory.function_sets.get_function_nodes()
         self.flow = Flow(start=call_agent_node)  # TODO: construct dynamically
 
     def call_agent(self, conn: Connection):

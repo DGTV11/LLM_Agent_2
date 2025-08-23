@@ -70,8 +70,7 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
         assert isinstance(exec_res.content, FunctionResultContent)
         memory, conn, _ = prep_res
 
-        memory.fifo_queue.push_message(exec_res)
-        memory.recall_storage.push_message(exec_res)
+        memory.push_message(exec_res)
 
         conn.send(json.dumps({"message": exec_res.to_intermediate_repr()}))
 

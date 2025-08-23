@@ -303,7 +303,7 @@ class ArchivalStorage:  # *ChromaDB
             include=["documents", "metadatas"],
             offset=offset,
             n_results=count,
-            where={"category": category},
+            where=({"category": category} if category else None),
         )
         page_tuples = zip(*query_res.values)
         page_dicts = [
@@ -585,6 +585,10 @@ class Memory:
     @property
     def in_ctx_no_tokens(self) -> int:
         return len(llm_tokenise(self.main_ctx))
+
+    def push_message(self, message: Message) -> None:
+        self.fifo_queue.push_message(message)
+        self.recall_storage.push_message(message)
 
     def flush_fifo_queue(self, tgt_token_frac: float) -> None:
         rs, rsut = self.recursive_summary_and_summary_timestamp
