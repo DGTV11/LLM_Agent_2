@@ -2,14 +2,25 @@ import json
 from datetime import datetime
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
-from typing import Annotated, Any, Dict, List, Tuple, TypedDict
+from typing import Annotated, Any, Dict, Generator, List, Optional, Tuple, TypedDict
+from uuid import uuid4
 
 import yaml
 from pocketflow import *
 from pydantic import BaseModel, conint
 
+import db
+from function_sets import FunctionSets
 from llm import call_llm, llm_tokenise
-from memory import AssistantMessageContent, Memory, Message, TextContent
+from memory import (
+    ArchivalStorage,
+    AssistantMessageContent,
+    Memory,
+    Message,
+    RecallStorage,
+    TextContent,
+    WorkingContext,
+)
 
 
 # *CallAgent node
@@ -77,32 +88,92 @@ class ExitOrContinue(Node):
         print("No heartbeat requested, exiting agent loop")
 
 
-class Agent:
-    def __init__(self, memory: Memory):
-        self.memory = memory
-
-        call_agent_node = CallAgent(max_retries=10)
-        function_node_dict = self.memory.function_sets.get_function_nodes()
-        self.flow = Flow(start=call_agent_node)  # TODO: construct dynamically
-
-    def call_agent(self, conn: Connection):
-        shared = {"memory": self.memory, "conn": conn}
-
-        self.flow.run(shared)
-
-        conn.send(None)
+# *Helper functions
+def get_memory_object(agent_id: str):
+    return Memory(
+        working_context=WorkingContext(agent_id=agent_id),
+        archival_storage=ArchivalStorage(agent_id=agent_id),
+        recall_storage=RecallStorage(agent_id=agent_id),
+        function_sets=FunctionSets(agent_id=agent_id),
+        fifo_queue=FIFOQueue(agent_id=agent_id),
+        agent_id=agent_id,
+    )
 
 
-def agent_step(agent: Agent):
+def get_agent_flow(memory: Memory):
+    call_agent_node = CallAgent(max_retries=10)
+    exit_or_continue_node = ExitOrContinue()
+
+    function_node_dict = memory.function_sets.get_function_nodes()
+    for function_name, function_node in function_node_dict.items():
+        call_agent_node - function_name >> function_node
+        function_node >> exit_or_continue_node
+
+    return Flow(start=call_agent_node)
+
+
+# *Agent runner functions
+def create_new_agent(
+    optional_function_sets: List[str], agent_persona: str, user_persona: Optional[str]
+):
+    agent_id = str(uuid4())
+
+    db.sqlite_db_write_query(
+        """
+        INSERT INTO agents (id, optional_function_sets)
+        (?, ?);
+        """,
+        (
+            agent_id,
+            json.dumps(optional_function_sets),
+        ),
+    )
+
+    db.sqlite_db_write_query(
+        """
+        INSERT INTO working_context (id, agent_id, agent_persona, user_persona, tasks)
+        (?, ?, ?, ?, ?);
+        """,
+        (
+            str(uuid4()),
+            agent_id,
+            agent_persona,
+            user_persona
+            or "This is what I know about the user. I should update this persona as our conversation progresses",
+            json.dumps([]),
+        ),
+    )
+
+
+def call_agent(memory: Memory, agent_flow: Flow, conn: Connection) -> None:
+    shared = {"memory": memory, "conn": conn}
+
+    flow.run(shared)
+
+    conn.send(None)
+
+
+def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
 
-    p = Process(target=agent.call_agent, args=(child_conn,))
+    memory = get_memory_object(agent_id)
+    agent_flow = get_agent_flow(memory)
+
+    p = Process(
+        target=agent.call_agent,
+        args=(
+            memory,
+            agent_flow,
+            child_conn,
+        ),
+    )
+
     p.start()
 
     while True:
         msg = parent_conn.recv()
         if msg is None:
             break
-        yield msg
+        yield json.loads(msg)
 
     p.join()

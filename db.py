@@ -62,7 +62,7 @@ sqlite_db_write_query(
         id TEXT PRIMARY KEY NOT NULL,
         agent_id TEXT NOT NULL,
         agent_persona TEXT NOT NULL,
-        user_persona TEXT NOT NULL DEFAULT "This is what I know about the user. I should update this persona as our conversation progresses",
+        user_persona TEXT NOT NULL,
         -- json list
         tasks TEXT NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE

@@ -6,7 +6,7 @@ from pocketflow import *
 from pydantic import BaseModel, Field, PositiveInt
 
 from config import PAGE_SIZE
-from function_sets import FunctionNode
+from function_node import FunctionNode
 from memory import FunctionResultContent, Memory, Message
 
 

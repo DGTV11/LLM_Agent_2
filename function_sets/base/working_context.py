@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal
 from pocketflow import *
 from pydantic import BaseModel, Field
 
-from function_sets import FunctionNode
+from function_node import FunctionNode
 from memory import FunctionResultContent, Memory, Message
 
 
