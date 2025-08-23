@@ -8,12 +8,6 @@ from pydantic._internal._model_construction import ModelMetaclass
 from memory import FunctionResultContent, Memory, Message
 
 
-class PlaceholderValidator(BaseModel):
-    """Placeholder validator"""
-
-    pass
-
-
 class FunctionNodeMeta(type):
     def __new__(cls, name, bases, namespace):
         if "name" not in namespace:
@@ -32,7 +26,7 @@ class FunctionNodeMeta(type):
 
 class FunctionNode(Node, metaclass=FunctionNodeMeta):
     name = "placeholder"
-    validator = PlaceholderValidator
+    validator = BaseModel
 
     def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, Connection, Dict]:
         memory = shared["memory"]

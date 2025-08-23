@@ -11,7 +11,13 @@ from pydantic import BaseModel
 from semantic_text_splitter import TextSplitter
 
 import db
-from config import CHUNK_MAX_TOKENS, CTX_WINDOW, FLUSH_TGT_TOK_FRAC, PERSONA_MAX_WORDS
+from config import (
+    CHUNK_MAX_TOKENS,
+    CTX_WINDOW,
+    FLUSH_MIN_FIFO_QUEUE_LEN,
+    FLUSH_TGT_TOK_FRAC,
+    PERSONA_MAX_WORDS,
+)
 from function_sets import FunctionSets
 from llm import call_llm, llm_tokenise
 from prompts import RECURSIVE_SUMMARY_PROMPT, SYSTEM_PROMPT
@@ -554,7 +560,7 @@ class Memory:
                     timestamp=rsut,
                     content=TextContent(
                         message=f"""
-# Recursive summary (contains conversation history beyond beginning of context window)
+# Recursive summary (contains conversation history before beginning of context window, if any)
 
 {rs}
 """.strip()
@@ -600,7 +606,7 @@ class Memory:
                     timestamp=rsut,
                     content=TextContent(
                         message=f"""
-# Recursive summary (contains conversation history beyond beginning of context window)
+# Recursive summary (contains conversation history before beginning of context window, if any)
 
 {rs}
 """.strip()
@@ -613,6 +619,12 @@ class Memory:
             self.in_ctx_no_tokens > FLUSH_TGT_TOK_FRAC * CTX_WINDOW
             or self.fifo_queue.peek_message().message_type != "user"
         ):
+            if (
+                len(self.fifo_queue) <= FLUSH_MIN_FIFO_QUEUE_LEN
+                and self.fifo_queue.peek_message().message_type == "user"
+            ):
+                breal
+
             evicted_message_strs.append(
                 yaml.dump(self.fifo_queue.pop_message().to_intermediate_repr()).strip()
             )

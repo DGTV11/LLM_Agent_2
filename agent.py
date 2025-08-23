@@ -10,6 +10,7 @@ from pocketflow import *
 from pydantic import BaseModel, conint
 
 import db
+from config import CTX_WINDOW, FLUSH_TGT_TOK_FRAC, FLUSH_TOK_FRAC, WARNING_TOK_FRAC
 from function_sets import FunctionSets
 from llm import call_llm, llm_tokenise
 from memory import (
@@ -84,8 +85,58 @@ class CallAgent(Node):
 
 # *ExitOrContinue node
 class ExitOrContinue(Node):
-    def exec(_) -> None:
-        print("No heartbeat requested, exiting agent loop")
+    def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, Connection]:
+        memory = shared["memory"]
+        assert isinstance(memory, Memory)
+
+        do_heartbeat = shared["do_heartbeat"]
+        assert isinstance(do_heartbeat, bool)
+
+        conn = shared["conn"]
+        assert isinstance(conn, Connection)
+
+        return memory, do_heartbeat, conn
+
+    def exec(self, inputs: Tuple[Memory, bool, Connection]) -> bool:
+        memory, do_heartbeat, conn = inputs
+
+        if memory.in_ctx_no_tokens > FLUSH_TOK_FRAC * CTX_WINDOW:
+            system_message = Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message=f"FIFO Queue above {FLUSH_TOK_FRAC:.0%} of context window. Queue has been flushed to free up context space."
+                ),
+            )
+            memory.push_message(system_message)
+
+            conn.send(json.dumps({"message": system_message.to_intermediate_repr()}))
+
+            memory.flush_fifo_queue(FLUSH_TGT_TOK_FRAC)
+
+        elif memory.in_ctx_no_tokens > WARNING_TOK_FRAC * CTX_WINDOW:
+            system_message = Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message=f"FIFO Queue above {WARNING_TOK_FRAC:.0%} of context window. Please store relevant information from your conversation history into your Archival Storage or Working Context."
+                ),
+            )
+            memory.push_message(system_message)
+
+            conn.send(json.dumps({"message": system_message.to_intermediate_repr()}))
+
+            do_heartbeat = True
+
+        return do_heartbeat
+
+    def post(
+        self,
+        shared: Dict[str, Any],
+        prep_res: Tuple[Memory, bool, Connection],
+        exec_res: bool,
+    ) -> str:
+        return "heartbeat" if exec_res else None
 
 
 # *Helper functions
