@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import yaml
 from pocketflow import *
+from pydantic import BaseModel
 from semantic_text_splitter import TextSplitter
 
 import db
@@ -469,6 +470,11 @@ class FIFOQueue:
         return last_message
 
 
+class GenerateNewRecursiveSummaryResult(BaseModel):
+    analysis: str
+    summary: str
+
+
 class GenerateNewRecursiveSummary(Node):
     def prep(self, shared: Dict[str, Any]) -> List[str]:
         evicted_message_strs = shared["evicted_message_strs"]
@@ -486,12 +492,9 @@ class GenerateNewRecursiveSummary(Node):
 
         yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
         result = yaml.safe_load(yaml_str)
+        result_validated = GenerateNewRecursiveSummaryResult.model_validate(result)
 
-        assert isinstance(result, dict)
-        assert "summary" in result
-        assert isinstance(result["summary"], str)
-
-        return result["summary"]
+        return result_validated.summary
 
     def post(self, shared: Dict[str, Any], prep_res: List[str], exec_res: str) -> None:
         shared["summary"] = exec_res
@@ -550,7 +553,7 @@ class Memory:
         return rs, datetime.fromisoformat(rsut_txt)
 
     @property
-    def llm_ctx(self) -> List[Dict[str, str]]:
+    def main_ctx(self) -> List[Dict[str, str]]:
         processed_messages = [{"role": "system", "content": self.system_prompt}]
 
         last_userside_messages = []
@@ -594,7 +597,7 @@ class Memory:
 
     @property
     def in_ctx_no_tokens(self) -> int:
-        return len(llm_tokenise(self.llm_ctx))
+        return len(llm_tokenise(self.main_ctx))
 
     def flush_fifo_queue(self, tgt_token_frac: float) -> None:
         rs, rsut = self.recursive_summary_and_summary_timestamp

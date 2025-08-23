@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 from pocketflow import *
 
+from llm import call_llm, llm_tokenise
 from memory import Memory
 
 
@@ -18,6 +19,11 @@ class CallAgent(Node):
         return memory
 
     def exec(self, memory: Memory):
+        resp = call_llm(memory.main_ctx)
+
+        yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
+        result = yaml.safe_load(yaml_str)
+
         pass
 
     def post(self, shared, prep_res, exec_res):

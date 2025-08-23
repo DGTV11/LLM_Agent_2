@@ -2,10 +2,26 @@ from typing import Any, Dict
 
 import yaml
 from pocketflow import *
+from pydantic import BaseModel, field_validator
 
 from config import PERSONA_MAX_WORDS
 from llm import call_llm
 from prompts import PERSONA_GEN_PROMPT
+
+
+class GeneratePersonaResult(BaseModel):
+    analysis: str
+    persona: str
+
+    @field_validator("persona")
+    @classmethod
+    def validate_persona(cls, p):
+        persona_length = len(p.split())
+        if persona_length > PERSONA_MAX_WORDS:
+            raise ValueError(
+                f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {persona_length})"
+            )
+        return p
 
 
 class GeneratePersona(Node):
@@ -27,12 +43,9 @@ class GeneratePersona(Node):
 
         yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
         result = yaml.safe_load(yaml_str)
+        result_validated = GeneratePersonaResult.model_validate(result)
 
-        assert isinstance(result, dict)
-        assert "persona" in result
-        assert isinstance(result["persona"], str)
-        assert len(result["persona"].split()) <= PERSONA_MAX_WORDS
-        return result["persona"]
+        return result_validated.persona
 
     def post(self, shared: Dict[str, Any], prep_res: str, exec_res: str) -> None:
         shared["persona"] = exec_res

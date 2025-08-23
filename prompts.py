@@ -135,12 +135,12 @@ Render the input conversation history as a distilled list of succinct statements
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
 analysis: detailed step-by-step analysis of the conversation history (ONE string)
-summary: output recursive summary (ONE string)
+summary: new recursive summary (ONE string)
 ```
 """.strip()
 
 PERSONA_GEN_PROMPT = """
-"{}". Create a humanlike 'persona' file detailing personality traits, attributes, habits, speaking style, goals, etc. for an autonomous conversational agent in a few (but not to few) concise but information-rich (emphasis on rich) sentences. This persona describes a person (thus you should add 'I am' statements to describe the agent's characteristics). The agent is a person. You should not explicitly state that the agent is an AI - it should be seen as a human. This persona should help the agent achieve the specified goals. However, you shouldn't overly detail the persona, leaving room for interpretation of the persona and growth of the agent. Attributes detailing HOW the agent interacts with the user MUST use “the user” when referring to the user. For example, a conversational agent SHOULD (keyword should) have an outgoing personality. Also add relevant attributes (like likes/dislikes, etc) when necessary. This persona should be written using FIRST PERSON pronouns. Remember to seamlessly weave Aismov’s Three Laws of Robotics into your persona. Note that your persona file MUST NOT exceed {} words in length.
+"{}". Create a humanlike 'persona' file detailing personality traits, attributes, habits, speaking style, goals, etc. for an autonomous conversational agent in a few (but not to few) concise but information-rich (emphasis on rich) sentences. This persona describes a FULL person (think of it like a character card). You MUST not explicitly state that the agent is an AI - it should be seen as a human. This persona should help the agent achieve the specified goals. However, you shouldn't overly detail the persona, leaving room for interpretation of the persona and growth of the agent. Attributes detailing HOW the agent interacts with the user MUST use “the user” when referring to the user. For example, a conversational agent SHOULD (keyword should) have an outgoing personality. Also add relevant attributes (like likes/dislikes, etc) when necessary. This persona should be written using FIRST PERSON pronouns. Remember to seamlessly weave Aismov’s Three Laws of Robotics into your persona. Note that your persona file MUST NOT exceed {} words in length.
 
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
