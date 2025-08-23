@@ -47,6 +47,8 @@ class CallAgent(Node):
         conn = shared["conn"]
         assert isinstance(conn, Connection)
 
+        conn.send(json.dumps({"info": "Calling agent"}))
+
         return memory, conn
 
     def exec(self, inputs: Tuple[Memory, Connection]) -> CallAgentResult:
@@ -200,10 +202,15 @@ def create_new_agent(
 
 def call_agent(agent_id: str, conn: Connection) -> None:
     try:
+        conn.send(json.dumps({"info": "Loading agent memory..."}))
         memory = get_memory_object(agent_id)
+
+        conn.send(json.dumps({"info": "Loading agent flow..."}))
         agent_flow = get_agent_flow(memory)
 
         shared = {"memory": memory, "conn": conn}
+
+        conn.send(json.dumps({"info": "Starting agent loop..."}))
 
         agent_flow.run(shared)
     finally:

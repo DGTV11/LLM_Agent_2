@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
+import chromadb
 import yaml
 from pocketflow import Node
 from pydantic import BaseModel
@@ -266,9 +267,10 @@ class ArchivalStorage:  # *ChromaDB
     collection: Any = field(init=False)
 
     def __post_init__(self) -> None:
-        self.collection = db.CHROMA_DB_CLIENT.get_or_create_collection(
-            name=self.agent_id
-        )
+        self.collection = chromadb.PersistentClient(
+            path=path.dirname(__file__),
+            settings=chromadb.config.Settings(anonymized_telemetry=False),
+        ).get_or_create_collection(name=self.agent_id)
 
     def __len__(self) -> Union[int, Any]:
         return self.collection.count()

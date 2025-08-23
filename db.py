@@ -3,25 +3,18 @@ from os import path
 from sqlite3 import Error
 from typing import Any, List, Optional, Tuple, Union
 
-import chromadb
-
-SQLITE_DB_CONNECTION = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
-
-CHROMA_DB_CLIENT = chromadb.PersistentClient(
-    path=path.dirname(__file__),
-    settings=chromadb.config.Settings(anonymized_telemetry=False),
-)
-
 
 def sqlite_db_write_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> Union[int, float, str, bytes, None]:  # values can be tuple
-    cursor = SQLITE_DB_CONNECTION.cursor()
+    conn = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
+    cursor = conn.cursor()
     if values:
         cursor.execute(query, values)
     else:
         cursor.execute(query)
-    SQLITE_DB_CONNECTION.commit()
+    conn.commit()
+    conn.close()
 
     print(f"Successfully ran write query {query} with values {values}")
 
@@ -31,15 +24,18 @@ def sqlite_db_write_query(
 def sqlite_db_read_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> List[Tuple[Any, ...]]:  # values can be tuple
-    cursor = SQLITE_DB_CONNECTION.cursor()
+    conn = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
+    cursor = conn.cursor()
     if values:
         cursor.execute(query, values)
     else:
         cursor.execute(query)
+    results = cursor.fetchall()
+    conn.close()
 
     # print(f"Successfully ran read query {query} with values {values}")
 
-    return cursor.fetchall()
+    return results
 
 
 # *Init SQLite DB
