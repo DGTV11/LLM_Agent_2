@@ -6,7 +6,7 @@ from typing import Annotated, Any, Dict, Generator, List, Optional, Tuple, Typed
 from uuid import uuid4
 
 import yaml
-from pocketflow import *
+from pocketflow import Flow, Node
 from pydantic import BaseModel, conint
 
 import db
@@ -89,7 +89,7 @@ class CallAgent(Node):
 
 # *ExitOrContinue node
 class ExitOrContinue(Node):
-    def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, Connection]:
+    def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, bool, Connection]:
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
@@ -139,7 +139,7 @@ class ExitOrContinue(Node):
         shared: Dict[str, Any],
         prep_res: Tuple[Memory, bool, Connection],
         exec_res: bool,
-    ) -> str:
+    ) -> Optional[str]:
         return "heartbeat" if exec_res else None
 
 
@@ -213,6 +213,8 @@ def call_agent(agent_id: str, conn: Connection) -> None:
         conn.send(json.dumps({"info": "Starting agent loop..."}))
 
         agent_flow.run(shared)
+    except Exception as e:
+        conn.send(json.dumps({"error": str(e)}))
     finally:
         try:
             conn.send(None)

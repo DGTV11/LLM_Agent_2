@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import yaml
-from pocketflow import *
+from pocketflow import Node
 from pydantic import BaseModel, field_validator
 
 from config import PERSONA_MAX_WORDS

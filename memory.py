@@ -2,6 +2,7 @@ import json
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
+from os import path
 from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
@@ -625,7 +626,7 @@ class Memory:
                 len(self.fifo_queue) <= FLUSH_MIN_FIFO_QUEUE_LEN
                 and self.fifo_queue.peek_message().message_type == "user"
             ):
-                breal
+                break
 
             evicted_message_strs.append(
                 yaml.dump(self.fifo_queue.pop_message().to_intermediate_repr()).strip()

@@ -1,3 +1,5 @@
+import json
+from datetime import datetime
 from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Tuple
 
@@ -41,7 +43,7 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
         return memory, conn, arguments
 
     def exec(self, inputs: Tuple[Memory, Connection, Dict]) -> Message:
-        memory, _, arguments = inputs
+        memory, conn, arguments = inputs
         arguments_validated = self.validator.model_validate(arguments)
 
         return self.exec_function(memory, conn, arguments_validated)

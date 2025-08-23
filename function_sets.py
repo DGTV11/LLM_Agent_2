@@ -7,6 +7,8 @@ from datetime import datetime
 from types import ModuleType
 from typing import Any, Dict, List, Tuple
 
+import yaml
+
 import db
 
 # from function_node import FunctionNode
@@ -39,7 +41,8 @@ class FunctionSets:
             )[0][0]
         )
 
-    def get_function_nodes(self) -> Dict[str, "FunctionNode"]:
+    # def get_function_nodes(self) -> Dict[str, "FunctionNode"]:
+    def get_function_nodes(self) -> Dict[str, Any]:
         function_node_list = []
 
         # *Load nodes
