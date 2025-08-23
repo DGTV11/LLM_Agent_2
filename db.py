@@ -23,6 +23,8 @@ def sqlite_db_write_query(
         cursor.execute(query)
     SQLITE_DB_CONNECTION.commit()
 
+    print(f"Successfully ran write query {query} with values {values}")
+
     return cursor.lastrowid
 
 
@@ -34,6 +36,8 @@ def sqlite_db_read_query(
         cursor.execute(query, values)
     else:
         cursor.execute(query)
+
+    print(f"Successfully ran read query {query} with values {values}")
 
     return cursor.fetchall()
 

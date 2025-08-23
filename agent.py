@@ -16,12 +16,14 @@ from llm import call_llm, llm_tokenise
 from memory import (
     ArchivalStorage,
     AssistantMessageContent,
+    FIFOQueue,
     Memory,
     Message,
     RecallStorage,
     TextContent,
     WorkingContext,
 )
+from persona_gen import generate_persona
 
 
 # *CallAgent node
@@ -172,7 +174,7 @@ def create_new_agent(
     db.sqlite_db_write_query(
         """
         INSERT INTO agents (id, optional_function_sets)
-        (?, ?);
+        VALUES (?, ?);
         """,
         (
             agent_id,
@@ -183,7 +185,7 @@ def create_new_agent(
     db.sqlite_db_write_query(
         """
         INSERT INTO working_context (id, agent_id, agent_persona, user_persona, tasks)
-        (?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?);
         """,
         (
             str(uuid4()),
@@ -196,35 +198,107 @@ def create_new_agent(
     )
 
 
-def call_agent(memory: Memory, agent_flow: Flow, conn: Connection) -> None:
-    shared = {"memory": memory, "conn": conn}
+def call_agent(agent_id: str, conn: Connection) -> None:
+    try:
+        memory = get_memory_object(agent_id)
+        agent_flow = get_agent_flow(memory)
 
-    flow.run(shared)
+        shared = {"memory": memory, "conn": conn}
 
-    conn.send(None)
+        agent_flow.run(shared)
+    finally:
+        try:
+            conn.send(None)
+        except Exception:
+            pass
+        conn.close()
 
 
 def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
 
-    memory = get_memory_object(agent_id)
-    agent_flow = get_agent_flow(memory)
-
     p = Process(
-        target=agent.call_agent,
+        target=call_agent,
         args=(
-            memory,
-            agent_flow,
+            agent_id,
             child_conn,
         ),
     )
 
     p.start()
+    child_conn.close()
 
-    while True:
-        msg = parent_conn.recv()
-        if msg is None:
-            break
-        yield json.loads(msg)
+    try:
+        while True:
+            try:
+                msg = parent_conn.recv()  # may raise EOFError if child dies early
+            except EOFError:
+                break
+            if msg is None:
+                break
+            yield json.loads(msg)
+    finally:
+        parent_conn.close()
+        p.join(timeout=5)
+        if p.is_alive():
+            p.terminate()
+            p.join()
 
-    p.join()
+
+def main():
+    # Ask if user wants to load an existing agent
+    use_existing = input("Load existing agent? (y/n): ").strip().lower() == "y"
+
+    if use_existing:
+        agent_id = input("Enter agent ID: ").strip()
+        print(f"Loading agent {agent_id}")
+    else:
+        agent_id = str(uuid4())
+        agent_persona = input(
+            "Enter agent persona (default: AI-generated persona): "
+        ).strip()
+        if not agent_persona:
+            agent_persona = generate_persona("Provide companionship to the user")
+            print(f'Generated persona: "{agent_persona}"')
+        user_persona = (
+            input("Enter user persona (optional, press Enter to skip): ").strip()
+            or None
+        )
+        optional_functions = input(
+            "Enter optional function sets (comma separated, optional): "
+        ).strip()
+        optional_function_sets = (
+            [f.strip() for f in optional_functions.split(",") if f.strip()]
+            if optional_functions
+            else []
+        )
+
+        create_new_agent(
+            optional_function_sets=optional_function_sets,
+            agent_persona=agent_persona,
+            user_persona=user_persona,
+        )
+        print(f"Created new agent {agent_id}")
+
+    # Ask first message
+    user_message = input("Enter your first user message: ").strip()
+
+    # push user message to memory
+    memory = get_memory_object(agent_id)
+    memory.push_message(
+        Message(
+            message_type="user",
+            timestamp=datetime.now(),
+            content=TextContent(message=user_message),
+        )
+    )
+
+    # run agent_step generator
+    print("\nAssistant response:")
+    for resp in agent_step(agent_id):
+        print(json.dumps(resp, indent=2))
+        break  # only first response for test
+
+
+if __name__ == "__main__":
+    main()

@@ -344,7 +344,7 @@ class RecallStorage:  # *SQLite
         db.sqlite_db_write_query(
             """
             INSERT INTO recall_storage (id, agent_id, message_type, timestamp, content)
-            (?, ?, ?, ?, ?);
+            VALUES (?, ?, ?, ?, ?);
             """,
             (
                 str(uuid4()),
@@ -426,7 +426,7 @@ class FIFOQueue:
         db.sqlite_db_write_query(
             """
             INSERT INTO fifo_queue (id, agent_id, message_type, timestamp, content)
-            (?, ?, ?, ?, ?);
+            VALUES (?, ?, ?, ?, ?);
             """,
             (
                 str(uuid4()),
