@@ -20,7 +20,6 @@ class FunctionNodeMeta(type):
         if "validator" not in namespace:
             raise TypeError(f"Class {name} must define class variable 'validator'")
         if not isinstance(namespace["validator"], ModelMetaclass):
-            print(type(namespace["validator"]))
             raise TypeError(f"Class {name}.validator must be a BaseModel subclass")
 
         return super().__new__(cls, name, bases, namespace)

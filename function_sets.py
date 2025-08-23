@@ -36,7 +36,7 @@ class FunctionSets:
     def optional_function_set_names(self) -> List[str]:
         return json.loads(
             db.sqlite_db_read_query(
-                "SELECT optional_function_sets FROM agents WHERE agent_id = ?;",
+                "SELECT optional_function_sets FROM agents WHERE id = ?;",
                 (self.agent_id,),
             )[0][0]
         )
@@ -52,7 +52,7 @@ class FunctionSets:
         )
 
         for function_set_file in os.listdir(base_function_sets_dir):
-            if function_set_file.endswith(".py"):
+            if not function_set_file.endswith(".py"):
                 continue
             function_set_module = import_from_path(
                 function_set_file.replace(".py", ""),
@@ -92,7 +92,8 @@ class FunctionSets:
         return "\n\n".join(
             [
                 yaml.dump(
-                    dict(reversed(node.validator.model_json_schema())), sort_keys=False
+                    dict(reversed(node.validator.model_json_schema().items())),
+                    sort_keys=False,
                 ).strip()
                 for node in self.get_function_nodes().values()
             ]

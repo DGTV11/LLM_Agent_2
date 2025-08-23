@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
 from pocketflow import *

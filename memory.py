@@ -263,15 +263,20 @@ class WorkingContext:
 
 
 @dataclass
-class ArchivalStorage:  # *ChromaDB
+class ArchivalStorage:
     agent_id: str
-    collection: Any = field(init=False)
+    collection: Any = field(init=False, default=None)
 
     def __post_init__(self) -> None:
-        self.collection = chromadb.PersistentClient(
-            path=path.dirname(__file__),
+        self.collection = chromadb.HttpClient(
+            host="localhost",
+            port=8000,
             settings=chromadb.config.Settings(anonymized_telemetry=False),
         ).get_or_create_collection(name=self.agent_id)
+        # self.collection = chromadb.PersistentClient(
+        #     path=path.dirname(__file__),
+        #     settings=chromadb.config.Settings(anonymized_telemetry=False),
+        # ).get_or_create_collection(name=self.agent_id)
 
     def __len__(self) -> Union[int, Any]:
         return self.collection.count()
@@ -330,7 +335,7 @@ Categories: {self.categories}
 
 
 @dataclass
-class RecallStorage:  # *SQLite
+class RecallStorage:
     agent_id: str
 
     def __len__(self) -> int:

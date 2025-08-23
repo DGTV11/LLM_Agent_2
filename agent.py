@@ -155,6 +155,35 @@ def get_memory_object(agent_id: str):
     )
 
 
+# def get_memory_object(agent_id: str):
+#     working_context = WorkingContext(agent_id=agent_id)
+#     print("working_context:", working_context)
+#
+#     archival_storage = ArchivalStorage(agent_id=agent_id)
+#     print("archival_storage:", archival_storage)
+#
+#     recall_storage = RecallStorage(agent_id=agent_id)
+#     print("recall_storage:", recall_storage)
+#
+#     function_sets = FunctionSets(agent_id=agent_id)
+#     print("function_sets:", function_sets)
+#
+#     fifo_queue = FIFOQueue(agent_id=agent_id)
+#     print("fifo_queue:", fifo_queue)
+#
+#     memory = Memory(
+#         working_context=working_context,
+#         archival_storage=archival_storage,
+#         recall_storage=recall_storage,
+#         function_sets=function_sets,
+#         fifo_queue=fifo_queue,
+#         agent_id=agent_id,
+#     )
+#
+#     print("memory object created:", memory)
+#     return memory
+
+
 def get_agent_flow(memory: Memory):
     call_agent_node = CallAgent(max_retries=10)
     exit_or_continue_node = ExitOrContinue()
@@ -198,6 +227,8 @@ def create_new_agent(
             json.dumps([]),
         ),
     )
+
+    return agent_id
 
 
 def call_agent(agent_id: str, conn: Connection) -> None:
@@ -262,12 +293,12 @@ def main():
         agent_id = input("Enter agent ID: ").strip()
         print(f"Loading agent {agent_id}")
     else:
-        agent_id = str(uuid4())
         agent_persona = input(
             "Enter agent persona (default: AI-generated persona): "
         ).strip()
         if not agent_persona:
-            agent_persona = generate_persona("Provide companionship to the user")
+            # agent_persona = generate_persona("Provide companionship to the user")
+            agent_persona = "I'm a warm and considerate person with a friendly demeanor. I'm known for my active listening skills, so I should take the time to fully understand the user. I'm outgoing, curious, and enthusiastic, always eager to learn and share knowledge. I respect personal boundaries and maintain confidentiality, never divulging sensitive information. I genuinely care about the user's well-being, prioritizing their safetyand happiness above all else. I love exploring new ideas and experiences through conversations with the user."
             print(f'Generated persona: "{agent_persona}"')
         user_persona = (
             input("Enter user persona (optional, press Enter to skip): ").strip()
@@ -282,7 +313,7 @@ def main():
             else []
         )
 
-        create_new_agent(
+        agent_id = create_new_agent(
             optional_function_sets=optional_function_sets,
             agent_persona=agent_persona,
             user_persona=user_persona,

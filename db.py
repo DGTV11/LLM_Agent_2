@@ -16,7 +16,7 @@ def sqlite_db_write_query(
     conn.commit()
     conn.close()
 
-    print(f"Successfully ran write query {query} with values {values}")
+    # print(f"Successfully ran write query {query} with values {values}")
 
     return cursor.lastrowid
 
