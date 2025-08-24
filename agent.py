@@ -276,7 +276,7 @@ def call_agent(agent_id: str, conn: Connection) -> None:
         shared = {"memory": memory, "conn": conn}
 
         conn.send(json.dumps({"info": "Starting agent loop..."}))
-
+        
         agent_flow.run(shared)
     except Exception:
         conn.send(json.dumps({"error": traceback.format_exc()}))
