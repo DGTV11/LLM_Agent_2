@@ -214,7 +214,7 @@ def get_memory_object(agent_id: str):
 
 
 def get_agent_flow(memory: Memory):
-    call_agent_node = CallAgent(max_retries=100)
+    call_agent_node = CallAgent(max_retries=10)
     invalid_function_node = InvalidFunction()
     exit_or_continue_node = ExitOrContinue()
 
