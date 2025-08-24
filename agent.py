@@ -88,6 +88,34 @@ class CallAgent(Node):
         return function_call["name"]
 
 
+# *InvalidFunction node
+class InvalidFunction(Node):
+    def post(
+        self,
+        shared: Dict[str, Any],
+        prep_res: None,
+        exec_res: None,
+    ) -> None:
+        memory = shared["memory"]
+        assert isinstance(memory, Memory)
+
+        conn = shared["conn"]
+        assert isinstance(conn, Connection)
+
+        message = Message(
+            message_type="function_res",
+            timestamp=datetime.now(),
+            content=FunctionResultContent(
+                success=False, result="Function does not exist"
+            ),
+        )
+
+        memory.push_message(exec_res)
+        conn.send(json.dumps({"message": exec_res.to_intermediate_repr()}))
+
+        shared["do_heartbeat"] = True
+
+
 # *ExitOrContinue node
 class ExitOrContinue(Node):
     def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, bool, Connection]:
@@ -187,15 +215,17 @@ def get_memory_object(agent_id: str):
 
 def get_agent_flow(memory: Memory):
     call_agent_node = CallAgent(max_retries=100)
+    invalid_function_node = InvalidFunction()
     exit_or_continue_node = ExitOrContinue()
 
     function_node_dict = memory.function_sets.get_function_nodes()
     for function_name, function_node in function_node_dict.items():
         call_agent_node - function_name >> function_node
         function_node >> exit_or_continue_node
-    exit_or_continue_node - "heartbeat" >> call_agent_node
+    call_agent_node >> invalid_function_node
+    invalid_function_node >> exit_or_continue_node
 
-    # TODO: add fallback node
+    exit_or_continue_node - "heartbeat" >> call_agent_node
 
     return Flow(start=call_agent_node)
 
@@ -295,6 +325,18 @@ def main():
     if use_existing:
         agent_id = input("Enter agent ID: ").strip()
         print(f"Loading agent {agent_id}")
+
+        memory = get_memory_object(agent_id)
+
+        memory.push_message(
+            Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message="The user has re-entered the conversation. You should greet the user then carry on where you had left off."
+                ),
+            )
+        )
     else:
         agent_persona = input(
             "Enter agent persona (default: AI-generated persona): "
@@ -323,23 +365,50 @@ def main():
         )
         print(f"Created new agent {agent_id}")
 
-    # Ask first message
-    user_message = input("Enter your first user message: ").strip()
-
-    # push user message to memory
-    memory = get_memory_object(agent_id)
-    memory.push_message(
-        Message(
-            message_type="user",
-            timestamp=datetime.now(),
-            content=TextContent(message=user_message),
+        memory = get_memory_object(agent_id)
+        memory.push_message(
+            Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message="A new user has entered the conversation. You should greet the user then get to know him."
+                ),
+            )
         )
-    )
 
-    # run agent_step generator
-    print("\nAssistant response:")
+    print("\nAssistant first response:")
     for resp in agent_step(agent_id):
         print(json.dumps(resp, indent=2))
+
+    try:
+        while True:
+            user_message = input("Enter user message: ").strip()
+
+            memory.push_message(
+                Message(
+                    message_type="user",
+                    timestamp=datetime.now(),
+                    content=TextContent(message=user_message),
+                )
+            )
+
+            print("\nAssistant response:")
+            for resp in agent_step(agent_id):
+                print(json.dumps(resp, indent=2))
+    except KeyboardInterrupt:
+        memory.push_message(
+            Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message="The user has exited the conversation. You should do some background tasks(if necessary) before going into standby mode."
+                ),
+            )
+        )
+
+        print("\nAssistant response:")
+        for resp in agent_step(agent_id):
+            print(json.dumps(resp, indent=2))
 
 
 if __name__ == "__main__":

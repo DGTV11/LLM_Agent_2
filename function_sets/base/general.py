@@ -12,7 +12,7 @@ from memory import FunctionResultContent, Memory, Message
 
 # *send_message
 class SendMessageValidator(BaseModel):
-    """Sends a message to the user."""
+    """Sends a message to the user. You usually shouldn't request heartbeats when calling this function."""
 
     message: str = Field(description="Message to be sent.")
 
