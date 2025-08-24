@@ -319,7 +319,7 @@ class ArchivalStorage:
             n_results=count,
             where=({"category": category} if category else None),
         )
-        page_tuples = zip(*query_res.values)
+        page_tuples = zip(*query_res.values())
         page_dicts = [
             {"document": document, "metadata": metadata}
             for document, metadata in page_tuples
