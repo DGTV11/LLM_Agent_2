@@ -58,5 +58,12 @@ def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
 
 def llm_tokenise(messages: List[Dict[str, str]]) -> Union[List[int], Any]:
     tokeniser = AutoTokenizer.from_pretrained(HF_LLM_NAME, token=HF_TOKEN)  # type: ignore[no-untyped-call]
+    assert (
+        messages[0]["role"] == "system" and messages[1]["role"] == "user"
+    ) or messages[0]["role"] == "user"
+
+    if messages[0]["role"] == "system" and messages[1]["role"] == "user":
+        sys_prompt = messages.pop(0)["content"]
+        messages[0]["content"] = sys_prompt + messages[0]["content"]
 
     return tokeniser.apply_chat_template(messages, tokenize=True)

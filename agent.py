@@ -1,4 +1,5 @@
 import json
+import traceback
 from datetime import datetime
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
@@ -185,13 +186,14 @@ def get_memory_object(agent_id: str):
 
 
 def get_agent_flow(memory: Memory):
-    call_agent_node = CallAgent(max_retries=10)
+    call_agent_node = CallAgent(max_retries=100)
     exit_or_continue_node = ExitOrContinue()
 
     function_node_dict = memory.function_sets.get_function_nodes()
     for function_name, function_node in function_node_dict.items():
         call_agent_node - function_name >> function_node
         function_node >> exit_or_continue_node
+    exit_or_continue_node - "heartbeat" >> call_agent_node
 
     # TODO: add fallback node
 
@@ -246,8 +248,8 @@ def call_agent(agent_id: str, conn: Connection) -> None:
         conn.send(json.dumps({"info": "Starting agent loop..."}))
 
         agent_flow.run(shared)
-    except Exception as e:
-        conn.send(json.dumps({"error": str(e)}))
+    except Exception:
+        conn.send(json.dumps({"error": traceback.format_exc()}))
     finally:
         try:
             # conn.send(json.dumps({"info": "Agent loop end"}))
@@ -268,9 +270,9 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     try:
         while True:
             try:
-                print("Receiving message")
+                # print("Receiving message")
                 msg = parent_conn.recv()
-                print(f"Received msg {msg} with type {type(msg)}")
+                # print(f"Received msg {msg} with type {type(msg)}")
             except EOFError:
                 print("Child closed the pipe")
                 break
@@ -298,8 +300,8 @@ def main():
             "Enter agent persona (default: AI-generated persona): "
         ).strip()
         if not agent_persona:
-            # agent_persona = generate_persona("Provide companionship to the user")
-            agent_persona = "I'm a warm and considerate person with a friendly demeanor. I'm known for my active listening skills, so I should take the time to fully understand the user. I'm outgoing, curious, and enthusiastic, always eager to learn and share knowledge. I respect personal boundaries and maintain confidentiality, never divulging sensitive information. I genuinely care about the user's well-being, prioritizing their safetyand happiness above all else. I love exploring new ideas and experiences through conversations with the user."
+            agent_persona = generate_persona("Provide companionship to the user")
+            # agent_persona = "I'm a warm and considerate person with a friendly demeanor. I'm known for my active listening skills, so I should take the time to fully understand the user. I'm outgoing, curious, and enthusiastic, always eager to learn and share knowledge. I respect personal boundaries and maintain confidentiality, never divulging sensitive information. I genuinely care about the user's well-being, prioritizing their safetyand happiness above all else. I love exploring new ideas and experiences through conversations with the user."
             print(f'Generated persona: "{agent_persona}"')
         user_persona = (
             input("Enter user persona (optional, press Enter to skip): ").strip()
