@@ -193,6 +193,8 @@ def get_agent_flow(memory: Memory):
         call_agent_node - function_name >> function_node
         function_node >> exit_or_continue_node
 
+    # TODO: add fallback node
+
     return Flow(start=call_agent_node)
 
 
@@ -248,6 +250,7 @@ def call_agent(agent_id: str, conn: Connection) -> None:
         conn.send(json.dumps({"error": str(e)}))
     finally:
         try:
+            # conn.send(json.dumps({"info": "Agent loop end"}))
             conn.send(None)
         except Exception:
             pass
@@ -256,33 +259,31 @@ def call_agent(agent_id: str, conn: Connection) -> None:
 
 def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
-
-    p = Process(
-        target=call_agent,
-        args=(
-            agent_id,
-            child_conn,
-        ),
-    )
-
+    p = Process(target=call_agent, args=(agent_id, child_conn))
     p.start()
-    child_conn.close()
+    child_conn.close()  # parent never uses this
+
+    print("Stream start")
 
     try:
         while True:
             try:
-                msg = parent_conn.recv()  # may raise EOFError if child dies early
+                print("Receiving message")
+                msg = parent_conn.recv()
+                print(f"Received msg {msg} with type {type(msg)}")
             except EOFError:
+                print("Child closed the pipe")
                 break
+
             if msg is None:
+                print("End-of-stream marker")
                 break
+
             yield json.loads(msg)
     finally:
         parent_conn.close()
-        p.join(timeout=5)
-        if p.is_alive():
-            p.terminate()
-            p.join()
+        p.join()
+        print("End of stream")
 
 
 def main():
@@ -337,7 +338,6 @@ def main():
     print("\nAssistant response:")
     for resp in agent_step(agent_id):
         print(json.dumps(resp, indent=2))
-        break  # only first response for test
 
 
 if __name__ == "__main__":

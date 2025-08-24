@@ -547,7 +547,7 @@ class Memory:
     @property
     def recursive_summary_and_summary_timestamp(self) -> Tuple[str, datetime]:
         rs, rsut_txt = db.sqlite_db_read_query(
-            "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE agent_id = ?;",
+            "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE id = ?;",
             (self.agent_id,),
         )[0]
 
@@ -644,7 +644,7 @@ class Memory:
         new_summary = shared["summary"]
 
         db.sqlite_db_write_query(
-            "UPDATE agents SET recursive_summary = ?, recursive_summary_update_time = ? WHERE agent_id = ?",
+            "UPDATE agents SET recursive_summary = ?, recursive_summary_update_time = ? WHERE id = ?",
             (
                 new_summary,
                 datetime.now().isoformat(),
