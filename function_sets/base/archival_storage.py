@@ -3,7 +3,7 @@ from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
 from pocketflow import *
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel, Field, NonNegativeInt
 
 from config import PAGE_SIZE
 from function_node import FunctionNode
@@ -53,9 +53,9 @@ class ArchivalSearchValidator(BaseModel):
     query: str = Field(
         description="Search query. To be formatted for more effective vector search."
     )
-    page: Optional[PositiveInt] = Field(
+    page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be positive. If you haven't found the target information from Archival Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Archival Storage but are certain it's there, increment page number and try again.",
     )
     category: Optional[str] = Field(
         description="Category of information to limit search to."

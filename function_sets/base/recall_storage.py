@@ -4,7 +4,7 @@ from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
 from pocketflow import *
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel, Field, NonNegativeInt
 
 from config import PAGE_SIZE
 from function_node import FunctionNode
@@ -18,9 +18,9 @@ class RecallSearchValidator(BaseModel):
     query_text: str = Field(
         description="Search query. Exact match (case-insensitive) required for result to show up."
     )
-    page: Optional[PositiveInt] = Field(
+    page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be positive. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
     )
 
 
@@ -63,9 +63,9 @@ class RecallSearchByDateValidator(BaseModel):
     end_timestamp: datetime = Field(
         description="Ending timestamp (must conform to ISO 8601 format)"
     )
-    page: Optional[PositiveInt] = Field(
+    page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be positive. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
     )
 
 
