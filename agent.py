@@ -3,6 +3,7 @@ import traceback
 from datetime import datetime
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
+from time import sleep
 from typing import Annotated, Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from uuid import uuid4
 
@@ -473,7 +474,7 @@ def call_agent(agent_id: str) -> Generator[Dict[str, Any], str, None]:
     try:
         while True:
             try:
-                if parent_conn.poll(1):
+                if parent_conn.poll(0.25):
                     msg = AgentToParentMessage.model_validate(
                         json.loads(parent_conn.recv())
                     ).root
@@ -520,6 +521,7 @@ def call_agent_cli_test(agent_id: str):
                     break
                 print(item)
                 halt_now = True
+                time.sleep(1)
             else:
                 print("Requesting immediate halt...")
 
