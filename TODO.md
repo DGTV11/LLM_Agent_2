@@ -8,7 +8,7 @@
     - use shared state for agent state
     - dynamically load functions using `agent_node - func_name >> function_node` for loop
     - add yaml schemas using Pydantic
-4. [ ] ensure agent actually runs (remember to make each process has its own db conn) 
+4. [x] ensure agent actually runs (remember to make each process has its own db conn) 
 
 Remember:
 ```
