@@ -106,7 +106,11 @@ class CallAgent(Node):
         shared["arguments"] = function_call["arguments"]
         shared["do_heartbeat"] = function_call["do_heartbeat"]
 
-        return function_call["name"]
+        return (
+            function_call["name"]
+            if function_call["name"] in memory.function_sets.get_function_nodes()
+            else "invalid_function"
+        )
 
 
 # *InvalidFunction node
@@ -372,7 +376,7 @@ def get_agent_flow(memory: Memory):
     for function_name, function_node in function_node_dict.items():
         call_agent_node - function_name >> function_node
         function_node >> exit_or_continue_node
-    call_agent_node >> invalid_function_node
+    call_agent_node - "invalid_function" >> invalid_function_node
     invalid_function_node >> exit_or_continue_node
 
     exit_or_continue_node - "heartbeat" >> call_agent_node
@@ -415,7 +419,7 @@ def create_new_agent(
     return agent_id
 
 
-def call_agent(agent_id: str, conn: Connection) -> None:
+def call_agent_child(agent_id: str, conn: Connection) -> None:
     try:
         conn.send(
             AgentToParentMessage(
@@ -456,13 +460,12 @@ def call_agent(agent_id: str, conn: Connection) -> None:
             conn.send(AgentToParentMessage(message_type="halt").model_dump_json())
         except Exception:
             pass
-        child_conn.close()
-        parent_conn.close()
+        conn.close()
 
 
-def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
+def call_agent(agent_id: str) -> Generator[Dict[str, Any], str, None]:
     parent_conn, child_conn = Pipe()
-    p = Process(target=call_agent, args=(agent_id, child_conn))
+    p = Process(target=call_agent_child, args=(agent_id, child_conn))
     p.start()
 
     # print("Stream start")
@@ -470,11 +473,11 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     try:
         while True:
             try:
-                if parent_conn.poll(0.25):
+                if parent_conn.poll(1):
                     msg = AgentToParentMessage.model_validate(
                         json.loads(parent_conn.recv())
-                    )
-                    if msg.message_type == halt:
+                    ).root
+                    if msg.message_type == "halt":
                         break
                 else:
                     msg = None
@@ -495,6 +498,40 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
         parent_conn.close()
         p.join()
         # print("End of stream")
+
+
+def call_agent_cli_test(agent_id: str):
+    agent_iterator = call_agent(agent_id)
+    halt_now = False
+    item = None
+    while True:
+        try:
+            item = next(agent_iterator)
+            print(item)
+        except KeyboardInterrupt:
+            if not halt_now:
+                print(
+                    "Requesting agent to halt soon... Enter ^C again to halt immediately."
+                )
+
+                try:
+                    item = agent_iterator.send("halt_soon")
+                except StopIteration:
+                    break
+                print(item)
+                halt_now = True
+            else:
+                print("Requesting immediate halt...")
+
+                try:
+                    item = agent_iterator.send("halt")
+                except StopIteration:
+                    break
+
+                print(item)
+
+        except StopIteration:
+            break
 
 
 def main():
@@ -556,8 +593,7 @@ def main():
         )
 
     print("\nAssistant first response:")
-    for resp in agent_step(agent_id):
-        print(json.dumps(resp, indent=2))
+    call_agent_cli_test(agent_id)
 
     try:
         while True:
@@ -572,8 +608,7 @@ def main():
             )
 
             print("\nAssistant response:")
-            for resp in agent_step(agent_id):
-                print(json.dumps(resp, indent=2))
+            call_agent_cli_test(agent_id)
     except KeyboardInterrupt:
         memory.push_message(
             Message(
@@ -586,8 +621,7 @@ def main():
         )
 
         print("\nAssistant response:")
-        for resp in agent_step(agent_id):
-            print(json.dumps(resp, indent=2))
+        call_agent_cli_test(agent_id)
 
 
 if __name__ == "__main__":
