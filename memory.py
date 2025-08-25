@@ -21,7 +21,7 @@ from config import (
     PERSONA_MAX_WORDS,
 )
 from function_sets import FunctionSets
-from llm import call_llm, llm_tokenise
+from llm import call_llm, extract_yaml, llm_tokenise
 from prompts import RECURSIVE_SUMMARY_PROMPT, SYSTEM_PROMPT
 
 
@@ -495,8 +495,7 @@ class GenerateNewRecursiveSummary(Node):
             ]
         )
 
-        yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
-        result = yaml.safe_load(yaml_str)
+        result = extract_yaml(resp)
         result_validated = GenerateNewRecursiveSummaryResult.model_validate(result)
 
         return result_validated.summary

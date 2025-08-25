@@ -5,7 +5,7 @@ from pocketflow import Node
 from pydantic import BaseModel, field_validator
 
 from config import PERSONA_MAX_WORDS
-from llm import call_llm
+from llm import call_llm, extract_yaml
 from prompts import PERSONA_GEN_PROMPT
 
 
@@ -41,8 +41,7 @@ class GeneratePersona(Node):
             ]
         )
 
-        yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
-        result = yaml.safe_load(yaml_str)
+        result = extract_yaml(resp)
         result_validated = GeneratePersonaResult.model_validate(result)
 
         return result_validated.persona

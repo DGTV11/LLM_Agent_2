@@ -11,6 +11,7 @@ from pocketflow import Flow, Node
 from pydantic import BaseModel, conint
 
 import db
+from communication import AgentToParentMessage
 from config import CTX_WINDOW, FLUSH_TGT_TOK_FRAC, FLUSH_TOK_FRAC, WARNING_TOK_FRAC
 from function_sets import FunctionSets
 from llm import call_llm, llm_tokenise
@@ -18,6 +19,7 @@ from memory import (
     ArchivalStorage,
     AssistantMessageContent,
     FIFOQueue,
+    FunctionResultContent,
     Memory,
     Message,
     RecallStorage,
@@ -48,7 +50,11 @@ class CallAgent(Node):
         conn = shared["conn"]
         assert isinstance(conn, Connection)
 
-        conn.send(json.dumps({"info": "Calling agent"}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="debug", payload="Calling agent"
+            ).model_dump_json()
+        )
 
         return memory, conn
 
@@ -57,8 +63,13 @@ class CallAgent(Node):
 
         resp = call_llm(memory.main_ctx)
 
-        yaml_str = resp.split("```yaml")[1].split("```")[0].strip()
-        result = yaml.safe_load(yaml_str)
+        conn.send(
+            AgentToParentMessage(
+                message_type="debug", payload=f"Got respose: {resp}"
+            ).model_dump_json()
+        )
+
+        result = extract_yaml(resp)
         result_validated = CallAgentResult.model_validate(result)
 
         return result_validated
@@ -79,7 +90,11 @@ class CallAgent(Node):
         agent_message_obj = Message.from_intermediate_repr(agent_message_dict)
         memory.push_message(agent_message_obj)
 
-        conn.send(json.dumps({"message": agent_message_dict}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="message", payload=agent_message_dict
+            ).model_dump_json()
+        )
 
         function_call = exec_res.function_call
         shared["arguments"] = function_call["arguments"]
@@ -102,7 +117,7 @@ class InvalidFunction(Node):
         conn = shared["conn"]
         assert isinstance(conn, Connection)
 
-        message = Message(
+        error_message = Message(
             message_type="function_res",
             timestamp=datetime.now(),
             content=FunctionResultContent(
@@ -110,8 +125,12 @@ class InvalidFunction(Node):
             ),
         )
 
-        memory.push_message(exec_res)
-        conn.send(json.dumps({"message": exec_res.to_intermediate_repr()}))
+        memory.push_message(error_message)
+        conn.send(
+            AgentToParentMessage(
+                message_type="message", payload=error_message.to_intermediate_repr()
+            ).model_dump_json()
+        )
 
         shared["do_heartbeat"] = True
 
@@ -143,7 +162,12 @@ class ExitOrContinue(Node):
             )
             memory.push_message(system_message)
 
-            conn.send(json.dumps({"message": system_message.to_intermediate_repr()}))
+            conn.send(
+                AgentToParentMessage(
+                    message_type="message",
+                    payload=system_message.to_intermediate_repr(),
+                ).model_dump_json()
+            )
 
             memory.flush_fifo_queue(FLUSH_TGT_TOK_FRAC)
 
@@ -157,7 +181,12 @@ class ExitOrContinue(Node):
             )
             memory.push_message(system_message)
 
-            conn.send(json.dumps({"message": system_message.to_intermediate_repr()}))
+            conn.send(
+                AgentToParentMessage(
+                    message_type="message",
+                    payload=system_message.to_intermediate_repr(),
+                ).model_dump_json()
+            )
 
             do_heartbeat = True
 
@@ -267,22 +296,37 @@ def create_new_agent(
 
 def call_agent(agent_id: str, conn: Connection) -> None:
     try:
-        conn.send(json.dumps({"info": "Loading agent memory..."}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="debug", payload="Loading agent memory..."
+            ).model_dump_json()
+        )
         memory = get_memory_object(agent_id)
 
-        conn.send(json.dumps({"info": "Loading agent flow..."}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="debug", payload="Loading agent flow..."
+            ).model_dump_json()
+        )
         agent_flow = get_agent_flow(memory)
 
         shared = {"memory": memory, "conn": conn}
 
-        conn.send(json.dumps({"info": "Starting agent loop..."}))
-        
+        conn.send(
+            AgentToParentMessage(
+                message_type="debug", payload="Starting agent loop..."
+            ).model_dump_json()
+        )
+
         agent_flow.run(shared)
     except Exception:
-        conn.send(json.dumps({"error": traceback.format_exc()}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="error", payload=traceback.format_exc()
+            ).model_dump_json()
+        )
     finally:
         try:
-            # conn.send(json.dumps({"info": "Agent loop end"}))
             conn.send(None)
         except Exception:
             pass
@@ -293,9 +337,8 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
     p = Process(target=call_agent, args=(agent_id, child_conn))
     p.start()
-    child_conn.close()  # parent never uses this
 
-    print("Stream start")
+    # print("Stream start")
 
     try:
         while True:
@@ -304,7 +347,7 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
                 msg = parent_conn.recv()
                 # print(f"Received msg {msg} with type {type(msg)}")
             except EOFError:
-                print("Child closed the pipe")
+                # print("Child closed the pipe")
                 break
 
             if msg is None:
@@ -313,9 +356,10 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
 
             yield json.loads(msg)
     finally:
+        child_conn.close()
         parent_conn.close()
         p.join()
-        print("End of stream")
+        # print("End of stream")
 
 
 def main():

@@ -1,6 +1,8 @@
 # from debug import printd
+import re
 from typing import Any, Dict, List, Union, cast
 
+import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer  # type: ignore[attr-defined]
 
@@ -54,6 +56,17 @@ def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
     #         },
     #     ],
     # },
+
+
+def extract_yaml(resp: str) -> Dict[str, Any]:
+    match = re.search(r"```(?:ya?ml)?\s*([\s\S]*?)```", resp, re.IGNORECASE)
+    if match:
+        yaml_str = match.group(1).strip()
+    else:
+        # fallback: maybe whole response is YAML
+        yaml_str = resp.strip()
+
+    return yaml.safe_load(yaml_str)
 
 
 def llm_tokenise(messages: List[Dict[str, str]]) -> Union[List[int], Any]:

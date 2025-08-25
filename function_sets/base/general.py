@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Literal
 from pocketflow import *
 from pydantic import BaseModel, Field
 
+from communication import AgentToParentMessage
 from function_node import FunctionNode
 from memory import FunctionResultContent, Memory, Message
 
@@ -28,7 +29,11 @@ class SendMessage(FunctionNode):
         arguments_validated: SendMessageValidator,
     ) -> Message:
 
-        conn.send(json.dumps({"message_to_user": arguments_validated.message}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="to_user", payload=arguments_validated.message
+            ).model_dump_json()
+        )
 
         return Message(
             message_type="function_res",

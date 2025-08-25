@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 from pocketflow import Node
 from pydantic import BaseModel
 
+from communication import AgentToParentMessage
 from memory import FunctionResultContent, Memory, Message
 
 
@@ -69,7 +70,11 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
 
         memory.push_message(exec_res)
 
-        conn.send(json.dumps({"message": exec_res.to_intermediate_repr()}))
+        conn.send(
+            AgentToParentMessage(
+                message_type="message", payload=exec_res.to_intermediate_repr()
+            ).model_dump_json()
+        )
 
         if not exec_res.content.success:
             shared["do_heartbeat"] = True
