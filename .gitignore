@@ -14,4 +14,4 @@ wheels/
 
 # Private stuff
 db.sqlite
-chroma.sqlite3
+chroma
