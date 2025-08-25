@@ -1,4 +1,5 @@
 import json
+import signal
 import traceback
 from datetime import datetime
 from multiprocessing import Pipe, Process
@@ -420,7 +421,8 @@ def create_new_agent(
     return agent_id
 
 
-def call_agent_child(agent_id: str, conn: Connection) -> None:
+def call_agent_worker(agent_id: str, conn: Connection) -> None:
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         conn.send(
             AgentToParentMessage(
@@ -466,7 +468,7 @@ def call_agent_child(agent_id: str, conn: Connection) -> None:
 
 def call_agent(agent_id: str) -> Generator[Dict[str, Any], str, None]:
     parent_conn, child_conn = Pipe()
-    p = Process(target=call_agent_child, args=(agent_id, child_conn))
+    p = Process(target=call_agent_worker, args=(agent_id, child_conn))
     p.start()
 
     # print("Stream start")
