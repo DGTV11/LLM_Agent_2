@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Tuple
 
 from pocketflow import Node
 from pydantic import BaseModel
-from pydantic._internal._model_construction import ModelMetaclass
 
 from memory import FunctionResultContent, Memory, Message
 
@@ -19,7 +18,7 @@ class FunctionNodeMeta(type):
 
         if "validator" not in namespace:
             raise TypeError(f"Class {name} must define class variable 'validator'")
-        if not isinstance(namespace["validator"], ModelMetaclass):
+        if not issubclass(namespace["validator"], BaseModel):
             raise TypeError(f"Class {name}.validator must be a BaseModel subclass")
 
         return super().__new__(cls, name, bases, namespace)
