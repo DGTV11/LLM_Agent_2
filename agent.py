@@ -12,7 +12,13 @@ from pydantic import BaseModel, conint
 
 import db
 from communication import AgentToParentMessage
-from config import CTX_WINDOW, FLUSH_TGT_TOK_FRAC, FLUSH_TOK_FRAC, WARNING_TOK_FRAC
+from config import (
+    CTX_WINDOW,
+    FLUSH_TGT_TOK_FRAC,
+    FLUSH_TOK_FRAC,
+    OVERTHINK_WARNING_HEARTBEAT_COUNT,
+    WARNING_TOK_FRAC,
+)
 from function_sets import FunctionSets
 from llm import call_llm, extract_yaml, llm_tokenise
 from memory import (
@@ -47,7 +53,7 @@ class CallAgent(Node):
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
-        conn = shared["conn"]
+        conn = shared["child_conn"]
         assert isinstance(conn, Connection)
 
         conn.send(
@@ -114,7 +120,7 @@ class InvalidFunction(Node):
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
-        conn = shared["conn"]
+        conn = shared["child_conn"]
         assert isinstance(conn, Connection)
 
         error_message = Message(
@@ -137,22 +143,61 @@ class InvalidFunction(Node):
 
 # *ExitOrContinue node
 class ExitOrContinue(Node):
-    def prep(self, shared: Dict[str, Any]) -> Tuple[Memory, bool, Connection]:
+    def prep(
+        self, shared: Dict[str, Any]
+    ) -> Tuple[Memory, bool, Connection, Connection, int, bool]:
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
         do_heartbeat = shared["do_heartbeat"]
         assert isinstance(do_heartbeat, bool)
 
-        conn = shared["conn"]
-        assert isinstance(conn, Connection)
+        child_conn = shared["child_conn"]
+        assert isinstance(child_conn, Connection)
 
-        return memory, do_heartbeat, conn
+        parent_conn = shared["parent_conn"]
+        assert isinstance(parent_conn, Connection)
 
-    def exec(self, inputs: Tuple[Memory, bool, Connection]) -> bool:
-        memory, do_heartbeat, conn = inputs
+        loops_since_overthink_warning = shared["loops_since_overthink_warning"] + 1
+        assert isinstance(loops_since_overthink_warning, int)
+        shared["loops_since_overthink_warning"] = loops_since_overthink_warning
 
-        if memory.in_ctx_no_tokens > FLUSH_TOK_FRAC * CTX_WINDOW:
+        ctx_window_warning_given_flag = shared["ctx_window_warning_given_flag"]
+        assert isinstance(ctx_window_warning_given_flag, bool)
+
+        return (
+            memory,
+            do_heartbeat,
+            child_conn,
+            parent_conn,
+            loops_since_overthink_warning,
+            ctx_window_warning_given_flag,
+        )
+
+    def exec(
+        self, inputs: Tuple[Memory, bool, Connection, Connection, int, bool]
+    ) -> Tuple[bool, bool, int]:
+        (
+            memory,
+            do_heartbeat,
+            child_conn,
+            parent_conn,
+            loops_since_overthink_warning,
+            ctx_window_warning_given_flag,
+        ) = inputs
+
+        memory_in_ctx_no_tokens = memory.in_ctx_no_tokens
+
+        child_conn.send(
+            AgentToParentMessage(
+                message_type="debug",
+                payload=f"Context window contains {memory_in_ctx_no_tokens}/{CTX_WINDOW} ({memory_in_ctx_no_tokens/CTX_WINDOW:.0%}) tokens",
+            ).model_dump_json()
+        )
+
+        if (
+            memory_in_ctx_no_tokens > FLUSH_TOK_FRAC * CTX_WINDOW
+        ):  # *FIFO Queue overflow check
             system_message = Message(
                 message_type="system",
                 timestamp=datetime.now(),
@@ -162,43 +207,83 @@ class ExitOrContinue(Node):
             )
             memory.push_message(system_message)
 
-            conn.send(
+            child_conn.send(
                 AgentToParentMessage(
                     message_type="message",
                     payload=system_message.to_intermediate_repr(),
                 ).model_dump_json()
             )
 
+            ctx_window_warning_given_flag = False
+
             memory.flush_fifo_queue(FLUSH_TGT_TOK_FRAC)
 
-        elif memory.in_ctx_no_tokens > WARNING_TOK_FRAC * CTX_WINDOW:
+        elif (
+            not ctx_window_warning_given_flag
+            and memory_in_ctx_no_tokens > WARNING_TOK_FRAC * CTX_WINDOW
+        ):  # *FIFO Queue warning check
             system_message = Message(
                 message_type="system",
                 timestamp=datetime.now(),
                 content=TextContent(
-                    message=f"FIFO Queue above {WARNING_TOK_FRAC:.0%} of context window. Please store relevant information from your conversation history into your Archival Storage or Working Context."
+                    message=f"FIFO Queue above {WARNING_TOK_FRAC:.0%} of context window. Please store relevant information from your conversation history into your Archival Storage or Working Context before continuing where you left off (you may use your Task Queue to keep track)."
                 ),
             )
             memory.push_message(system_message)
 
-            conn.send(
+            child_conn.send(
                 AgentToParentMessage(
                     message_type="message",
                     payload=system_message.to_intermediate_repr(),
                 ).model_dump_json()
             )
 
+            ctx_window_warning_given_flag = True
+            loops_since_overthink_warning = 0
+
             do_heartbeat = True
 
-        return do_heartbeat
+        elif (
+            loops_since_overthink_warning >= OVERTHINK_WARNING_HEARTBEAT_COUNT
+            and do_heartbeat
+        ):  # *Overthink check
+            system_message = Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message=f"You have requested heartbeats {do_heartbeat} times in a row. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false.  If you have not, please carry on until you have."
+                ),
+            )
+            memory.push_message(system_message)
+
+            child_conn.send(
+                AgentToParentMessage(
+                    message_type="message",
+                    payload=system_message.to_intermediate_repr(),
+                ).model_dump_json()
+            )
+
+            loops_since_overthink_warning = 0
+
+        return (
+            do_heartbeat,
+            ctx_window_warning_given_flag,
+            loops_since_overthink_warning,
+        )
 
     def post(
         self,
         shared: Dict[str, Any],
-        prep_res: Tuple[Memory, bool, Connection],
-        exec_res: bool,
+        prep_res: Tuple[Memory, bool, Connection, Connection, int, bool],
+        exec_res: Tuple[bool, bool, int],
     ) -> Optional[str]:
-        return "heartbeat" if exec_res else None
+        do_heartbeat, ctx_window_warning_given_flag, loops_since_overthink_warning = (
+            exec_res
+        )
+
+        shared["ctx_window_warning_given_flag"] = ctx_window_warning_given_flag
+
+        return "heartbeat" if do_heartbeat else None
 
 
 # *Helper functions
@@ -294,7 +379,7 @@ def create_new_agent(
     return agent_id
 
 
-def call_agent(agent_id: str, conn: Connection) -> None:
+def call_agent(agent_id: str, child_conn: Connection, parent_conn: Connection) -> None:
     try:
         conn.send(
             AgentToParentMessage(
@@ -310,7 +395,13 @@ def call_agent(agent_id: str, conn: Connection) -> None:
         )
         agent_flow = get_agent_flow(memory)
 
-        shared = {"memory": memory, "conn": conn}
+        shared = {
+            "memory": memory,
+            "child_conn": child_conn,
+            "parent_conn": parent_conn,
+            "loops_since_overthink_warning": 0,
+            "ctx_window_warning_given_flag": False,
+        }
 
         conn.send(
             AgentToParentMessage(
@@ -335,7 +426,7 @@ def call_agent(agent_id: str, conn: Connection) -> None:
 
 def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
-    p = Process(target=call_agent, args=(agent_id, child_conn))
+    p = Process(target=call_agent, args=(agent_id, child_conn, parent_conn))
     p.start()
 
     # print("Stream start")
