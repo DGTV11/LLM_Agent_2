@@ -33,7 +33,7 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
-        conn = shared["child_conn"]
+        conn = shared["conn"]
         assert isinstance(conn, Connection)
 
         arguments = shared["arguments"]

@@ -53,7 +53,7 @@ class CallAgent(Node):
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
-        conn = shared["child_conn"]
+        conn = shared["conn"]
         assert isinstance(conn, Connection)
 
         conn.send(
@@ -120,7 +120,7 @@ class InvalidFunction(Node):
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
-        conn = shared["child_conn"]
+        conn = shared["conn"]
         assert isinstance(conn, Connection)
 
         error_message = Message(
@@ -145,18 +145,15 @@ class InvalidFunction(Node):
 class ExitOrContinue(Node):
     def prep(
         self, shared: Dict[str, Any]
-    ) -> Tuple[Memory, bool, Connection, Connection, int, bool]:
+    ) -> Tuple[Memory, bool, Connection, int, bool]:
         memory = shared["memory"]
         assert isinstance(memory, Memory)
 
         do_heartbeat = shared["do_heartbeat"]
         assert isinstance(do_heartbeat, bool)
 
-        child_conn = shared["child_conn"]
-        assert isinstance(child_conn, Connection)
-
-        parent_conn = shared["parent_conn"]
-        assert isinstance(parent_conn, Connection)
+        conn = shared["conn"]
+        assert isinstance(conn, Connection)
 
         loops_since_overthink_warning = shared["loops_since_overthink_warning"] + 1
         assert isinstance(loops_since_overthink_warning, int)
@@ -168,27 +165,25 @@ class ExitOrContinue(Node):
         return (
             memory,
             do_heartbeat,
-            child_conn,
-            parent_conn,
+            conn,
             loops_since_overthink_warning,
             ctx_window_warning_given_flag,
         )
 
     def exec(
-        self, inputs: Tuple[Memory, bool, Connection, Connection, int, bool]
+        self, inputs: Tuple[Memory, bool, Connection, int, bool]
     ) -> Tuple[bool, bool, int]:
         (
             memory,
             do_heartbeat,
-            child_conn,
-            parent_conn,
+            conn,
             loops_since_overthink_warning,
             ctx_window_warning_given_flag,
         ) = inputs
 
         memory_in_ctx_no_tokens = memory.in_ctx_no_tokens
 
-        child_conn.send(
+        conn.send(
             AgentToParentMessage(
                 message_type="debug",
                 payload=f"Context window contains {memory_in_ctx_no_tokens}/{CTX_WINDOW} ({memory_in_ctx_no_tokens/CTX_WINDOW:.0%}) tokens",
@@ -207,7 +202,7 @@ class ExitOrContinue(Node):
             )
             memory.push_message(system_message)
 
-            child_conn.send(
+            conn.send(
                 AgentToParentMessage(
                     message_type="message",
                     payload=system_message.to_intermediate_repr(),
@@ -231,7 +226,7 @@ class ExitOrContinue(Node):
             )
             memory.push_message(system_message)
 
-            child_conn.send(
+            conn.send(
                 AgentToParentMessage(
                     message_type="message",
                     payload=system_message.to_intermediate_repr(),
@@ -243,6 +238,47 @@ class ExitOrContinue(Node):
 
             do_heartbeat = True
 
+        elif conn.poll(0.25):
+            match (conn.recv(), do_heartbeat):
+                case ("halt", True):
+                    system_message = Message(
+                        message_type="system",
+                        timestamp=datetime.now(),
+                        content=TextContent(
+                            message=f"The user has overridden your heartbeat request. Your AI has been halted."
+                        ),
+                    )
+                    memory.push_message(system_message)
+
+                    conn.send(
+                        AgentToParentMessage(
+                            message_type="message",
+                            payload=system_message.to_intermediate_repr(),
+                        ).model_dump_json()
+                    )
+
+                    do_heartbeat = False
+                case ("halt_soon", True):
+                    system_message = Message(
+                        message_type="system",
+                        timestamp=datetime.now(),
+                        content=TextContent(
+                            message=f"The user has requested that you finish up whatever you are doing soon. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have, but hurry up as the user has the option to forcefully halt your AI."
+                        ),
+                    )
+                    memory.push_message(system_message)
+
+                    conn.send(
+                        AgentToParentMessage(
+                            message_type="message",
+                            payload=system_message.to_intermediate_repr(),
+                        ).model_dump_json()
+                    )
+
+                    loops_since_overthink_warning = 0
+                case _:
+                    raise ValueError("Invalid command (what were you even thinking?)")
+
         elif (
             loops_since_overthink_warning >= OVERTHINK_WARNING_HEARTBEAT_COUNT
             and do_heartbeat
@@ -251,12 +287,12 @@ class ExitOrContinue(Node):
                 message_type="system",
                 timestamp=datetime.now(),
                 content=TextContent(
-                    message=f"You have requested heartbeats {do_heartbeat} times in a row. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false.  If you have not, please carry on until you have."
+                    message=f"You have requested heartbeats {do_heartbeat} times in a row. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have."
                 ),
             )
             memory.push_message(system_message)
 
-            child_conn.send(
+            conn.send(
                 AgentToParentMessage(
                     message_type="message",
                     payload=system_message.to_intermediate_repr(),
@@ -274,7 +310,7 @@ class ExitOrContinue(Node):
     def post(
         self,
         shared: Dict[str, Any],
-        prep_res: Tuple[Memory, bool, Connection, Connection, int, bool],
+        prep_res: Tuple[Memory, bool, Connection, int, bool],
         exec_res: Tuple[bool, bool, int],
     ) -> Optional[str]:
         do_heartbeat, ctx_window_warning_given_flag, loops_since_overthink_warning = (
@@ -379,7 +415,7 @@ def create_new_agent(
     return agent_id
 
 
-def call_agent(agent_id: str, child_conn: Connection, parent_conn: Connection) -> None:
+def call_agent(agent_id: str, conn: Connection) -> None:
     try:
         conn.send(
             AgentToParentMessage(
@@ -397,8 +433,7 @@ def call_agent(agent_id: str, child_conn: Connection, parent_conn: Connection) -
 
         shared = {
             "memory": memory,
-            "child_conn": child_conn,
-            "parent_conn": parent_conn,
+            "conn": conn,
             "loops_since_overthink_warning": 0,
             "ctx_window_warning_given_flag": False,
         }
@@ -418,15 +453,16 @@ def call_agent(agent_id: str, child_conn: Connection, parent_conn: Connection) -
         )
     finally:
         try:
-            conn.send(None)
+            conn.send(AgentToParentMessage(message_type="halt").model_dump_json())
         except Exception:
             pass
-        conn.close()
+        child_conn.close()
+        parent_conn.close()
 
 
 def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     parent_conn, child_conn = Pipe()
-    p = Process(target=call_agent, args=(agent_id, child_conn, parent_conn))
+    p = Process(target=call_agent, args=(agent_id, child_conn))
     p.start()
 
     # print("Stream start")
@@ -434,18 +470,26 @@ def agent_step(agent_id: str) -> Generator[Dict[str, Any], None, None]:
     try:
         while True:
             try:
-                # print("Receiving message")
-                msg = parent_conn.recv()
-                # print(f"Received msg {msg} with type {type(msg)}")
+                if parent_conn.poll(0.25):
+                    msg = AgentToParentMessage.model_validate(
+                        json.loads(parent_conn.recv())
+                    )
+                    if msg.message_type == halt:
+                        break
+                else:
+                    msg = None
             except EOFError:
-                # print("Child closed the pipe")
                 break
 
-            if msg is None:
-                print("End-of-stream marker")
-                break
+            input_cmd = yield msg
+            if input_cmd:
+                if input_cmd not in [
+                    "halt",
+                    "halt_soon",
+                ]:
+                    input_cmd = "halt"  # *automatically send halt signal because error
 
-            yield json.loads(msg)
+                parent_conn.send(input_cmd)
     finally:
         child_conn.close()
         parent_conn.close()
