@@ -421,6 +421,30 @@ def create_new_agent(
     return agent_id
 
 
+def list_agents() -> List[Tuple[str, str, str, List[str], datetime]]:
+    agent_infos = []
+
+    for id, optional_function_sets_json, created_at in db.sqlite_db_read_query(
+        "SELECT id, optional_function_sets, created_at FROM agents;"
+    ):
+        agent_infos.append(
+            (
+                id,
+                *db.sqlite_db_read_query(
+                    "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = ?;",
+                    (id,),
+                )[0],
+                json.loads(optional_function_sets_json),
+                datetime.fromisoformat(created_at),
+            )
+        )
+    return agent_infos  # id, agent_persona, user_persona, optional_function_sets, created_at
+
+
+def list_optional_function_sets() -> List[str]:  # TODO
+    pass
+
+
 def call_agent_worker(agent_id: str, conn: Connection) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
@@ -543,6 +567,16 @@ def main():
     use_existing = input("Load existing agent? (y/n): ").strip().lower() == "y"
 
     if use_existing:
+        print("Agent ids:")
+        for (
+            id,
+            agent_persona,
+            user_persona,
+            optional_function_sets,
+            created_at,
+        ) in list_agents():
+            print(f"- {id}")
+
         agent_id = input("Enter agent ID: ").strip()
         print(f"Loading agent {agent_id}")
 
