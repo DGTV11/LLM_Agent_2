@@ -315,11 +315,15 @@ class ArchivalStorage:
         query_res = self.collection.query(
             query_texts=[query],
             include=["documents", "metadatas"],
-            offset=offset,
-            n_results=count,
+            n_results=offset + count,
             where=({"category": category} if category else None),
         )
-        page_tuples = zip(*query_res.values())
+        page_tuples_raw = list(zip(query_res["documents"], query_res["metadatas"]))
+        if len(page_tuples_raw) <= offset:
+            return []
+
+        end = min(len(page_tuples_raw), offset + count)
+        page_tuples = page_tuples_raw[offset:end]
         page_dicts = [
             {"document": document, "metadata": metadata}
             for document, metadata in page_tuples
@@ -624,12 +628,14 @@ class Memory:
 
         while (
             self.in_ctx_no_tokens > FLUSH_TGT_TOK_FRAC * CTX_WINDOW
-            or self.fifo_queue.peek_message().message_type != "user"
+            or (msg := self.fifo_queue.peek_message()).message_type != "user"
         ):
-            if (
-                len(self.fifo_queue) <= FLUSH_MIN_FIFO_QUEUE_LEN
-                and self.fifo_queue.peek_message().message_type == "user"
-            ):
+            if len(
+                self.fifo_queue
+            ) <= FLUSH_MIN_FIFO_QUEUE_LEN and msg.message_type in [
+                "user",
+                "system",
+            ]:
                 break
 
             evicted_message_strs.append(
