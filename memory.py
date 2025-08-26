@@ -318,7 +318,7 @@ class ArchivalStorage:
             n_results=offset + count,
             where=({"category": category} if category else None),
         )
-        page_tuples_raw = list(zip(query_res["documents"], query_res["metadatas"]))
+        page_tuples_raw = list(zip(*query_res)) #TODO: verify
         if len(page_tuples_raw) <= offset:
             return []
 
