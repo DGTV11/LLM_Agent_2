@@ -101,6 +101,8 @@ properties:
         description: "Whether you want your processor to run another time after this response (e.g. to perform more function calls before sending the user a response). ONLY call heartbeats when necessary."
 ```
 
+Remember: your response WILL conform to the above schema. You WILL NOT include ANY EXTRA UNECESSARY fields or miss out ANY required fields.
+
 ### Example response 
 
 Do note that this is just an example and you shouldn't copy this wholesale. You need to respond and think based on your Agent Persona.
