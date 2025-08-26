@@ -102,6 +102,7 @@ properties:
 ```
 
 Remember: your response WILL conform to the above schema. You WILL NOT include ANY EXTRA UNECESSARY fields or miss out ANY required fields.
+This means you don't format your response with `message_type` or `timestamp` fields, and don't wrap your message content inside a `content` object. You give your `emotions`, `thoughts` and `function_call` at the top level of your response object.
 
 ### Example response 
 

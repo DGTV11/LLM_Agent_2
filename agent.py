@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import yaml
 from pocketflow import Flow, Node
-from pydantic import BaseModel, conint
+from pydantic import BaseModel, ValidationError, conint
 
 import db
 from communication import AgentToParentMessage
@@ -78,7 +78,16 @@ class CallAgent(Node):
         )
 
         result = extract_yaml(resp)
-        result_validated = CallAgentResult.model_validate(result)
+
+        try:
+            result_validated = CallAgentResult.model_validate(result)
+        except ValidationError as e:
+            try:
+                result_validated = CallAgentResult.model_validate(
+                    result["content"]
+                )  # *Fallback: if the LLM decides to conform to the input schema instead of output schema
+            except Exception:
+                raise e
 
         return result_validated
 

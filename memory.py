@@ -447,7 +447,7 @@ class FIFOQueue:
 
     def peek_message(self) -> Message:
         db_res = db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
+            "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
             (self.agent_id,),
         )
 
