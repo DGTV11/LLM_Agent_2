@@ -310,7 +310,7 @@ class ArchivalStorage:
         )
 
     def archival_search(
-        self, query: str, offset: int, count: int, category: Optional[str]
+        self, query: str, offset: int, count: int, category: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         query_res = self.collection.query(
             query_texts=[query],
@@ -318,19 +318,17 @@ class ArchivalStorage:
             n_results=offset + count,
             where=({"category": category} if category else None),
         )
-        page_tuples_raw = list(zip(*query_res)) #TODO: verify
-        if len(page_tuples_raw) <= offset:
-            return []
-
-        end = min(len(page_tuples_raw), offset + count)
-        page_tuples = page_tuples_raw[offset:end]
-        page_dicts = [
-            {"document": document, "metadata": metadata}
-            for document, metadata in page_tuples
+    
+        documents = query_res.get("documents", [[]])[0]
+        metadatas = query_res.get("metadatas", [[]])[0]
+    
+        results = [
+            {"document": doc, "metadata": meta}
+            for doc, meta in zip(documents, metadatas)
         ]
-
-        return page_dicts
-
+    
+        return results[offset:offset + count]
+    
     def __repr__(self) -> str:
         return f"""
 Archival storage contains {len(self)} entries
