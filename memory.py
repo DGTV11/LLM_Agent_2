@@ -310,7 +310,7 @@ class ArchivalStorage:
         )
 
     def archival_search(
-        self, query: str, offset: int, count: int, category: Optional[str] = None
+        self, query: str, offset: int, count: int, category: Optional[str]
     ) -> List[Dict[str, Any]]:
         query_res = self.collection.query(
             query_texts=[query],
