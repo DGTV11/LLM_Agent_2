@@ -66,11 +66,9 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
     memory = agent.get_memory_object(agent_id)
     memory.push_message(
         Message(
-            message_type="system",
+            message_type=user_or_system_message.message_type,
             timestamp=datetime.now(),
-            content=TextContent(
-                message="The user has re-entered the conversation. You should greet the user then carry on where you had left off."
-            ),
+            content=TextContent(message=user_or_system_message.message),
         )
     )
 
