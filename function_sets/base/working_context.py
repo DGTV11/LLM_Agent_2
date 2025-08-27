@@ -31,9 +31,9 @@ class PersonaAppend(FunctionNode):
     ) -> Message:
         match arguments_validated.section:
             case "user":
-                memory.working_context.user_persona += arguments_validated.text
+                memory.working_context.user_persona += "\n" + arguments_validated.text
             case "agent":
-                memory.working_context.agent_persona += arguments_validated.text
+                memory.working_context.agent_persona += "\n" + arguments_validated.text
 
         return Message(
             message_type="function_res",
