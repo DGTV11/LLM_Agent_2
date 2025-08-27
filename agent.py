@@ -1,4 +1,5 @@
 import json
+import os
 import signal
 import traceback
 from datetime import datetime
@@ -465,8 +466,17 @@ def delete_agent(agent_id: str) -> None:
     db.create_chromadb_client().delete_collection(agent_id)
 
 
-def list_optional_function_sets() -> List[str]:  # TODO
-    pass
+def list_optional_function_sets() -> List[str]:
+    base_function_sets_dir = os.path.join(
+        os.path.dirname(__file__), "function_sets", "optional"
+    )
+
+    return list(
+        map(
+            lambda fsf: fsf.replace(".py", ""),
+            filter(lambda fsf: fsf.endswith(".py"), os.listdir(base_function_sets_dir)),
+        )
+    )
 
 
 def call_agent_worker(agent_id: str, conn: Connection) -> None:
