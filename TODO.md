@@ -3,7 +3,7 @@
 - need to be able to query messages between leaving and joining back (because heartbeat)
 - websockets used for convo streaming
 
-2. [ ] Create semaphores and make the stream endpt `send msg+stream`
+2. [x] Create semaphores and make the stream endpt `send msg+stream`
 ```
 import asyncio
 from collections import defaultdict

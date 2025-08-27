@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 from datetime import datetime
 from typing import List, Literal, Optional
 
@@ -10,6 +11,10 @@ import persona_gen
 from memory import Message, TextContent
 
 app = FastAPI()
+
+agent_semaphores: defaultdict[str, asyncio.Semaphore] = defaultdict(
+    lambda: asyncio.Semaphore(1)
+)
 
 
 class AgentGoals(BaseModel):
@@ -37,8 +42,9 @@ def get_agent_info(agent_id: str):
 
 
 @app.delete("/agents/{agent_id}")
-def delete_agent(agent_id: str):
-    agent.delete_agent(agent_id)
+async def delete_agent(agent_id: str):
+    async with agent_semaphores[agent_id]:
+        agent.delete_agent(agent_id)
 
 
 class AgentDefinition(BaseModel):
@@ -61,48 +67,63 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
-@app.post("/agents/{agent_id}/send-message")
-def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
-    memory = agent.get_memory_object(agent_id)
-    memory.push_message(
-        Message(
-            message_type=user_or_system_message.message_type,
-            timestamp=datetime.now(),
-            content=TextContent(message=user_or_system_message.message),
+@app.post("/agents/{agent_id}/send-message/no-stream")
+async def send_message_no_stream(
+    agent_id: str, user_or_system_message: UserOrSystemMessage
+):
+    async with agent_semaphores[agent_id]:
+        memory = agent.get_memory_object(agent_id)
+        memory.push_message(
+            Message(
+                message_type=user_or_system_message.message_type,
+                timestamp=datetime.now(),
+                content=TextContent(message=user_or_system_message.message),
+            )
         )
-    )
 
 
-@app.websocket("/agents/{agent_id}/stream")
-async def agent_stream(agent_id: str, websocket: WebSocket):
-    await websocket.accept()
+@app.websocket("/agents/{agent_id}/send-message")
+async def send_message(
+    agent_id: str, user_or_system_message: UserOrSystemMessage, websocket: WebSocket
+):
+    async with agent_semaphores[agent_id]:
+        memory = agent.get_memory_object(agent_id)
+        memory.push_message(
+            Message(
+                message_type=user_or_system_message.message_type,
+                timestamp=datetime.now(),
+                content=TextContent(message=user_or_system_message.message),
+            )
+        )
 
-    gen = agent.call_agent(agent_id)
-    msg = next(gen)  # start generator
+        await websocket.accept()
 
-    async def receive_commands():
+        gen = agent.call_agent(agent_id)
+        msg = next(gen)  # start generator
+
+        async def receive_commands():
+            try:
+                while True:
+                    data = await websocket.receive_json()
+                    command = data.get("command")
+                    if command:
+                        nonlocal msg
+                        msg = gen.send(command)
+            except Exception:
+                pass
+
+        # Run command receiver in background
+        receive_task = asyncio.create_task(receive_commands())
+
         try:
             while True:
-                data = await websocket.receive_json()
-                command = data.get("command")
-                if command:
-                    nonlocal msg
-                    msg = gen.send(command)
-        except Exception:
-            pass
-
-    # Run command receiver in background
-    receive_task = asyncio.create_task(receive_commands())
-
-    try:
-        while True:
-            if msg:
-                await websocket.send_json(msg.model_dump())
-            try:
-                msg = next(gen)
-            except StopIteration:
-                break
-            await asyncio.sleep(0.05)  # small sleep to avoid tight loop
-    finally:
-        receive_task.cancel()
-        await websocket.close()
+                if msg:
+                    await websocket.send_json(msg.model_dump())
+                try:
+                    msg = next(gen)
+                except StopIteration:
+                    break
+                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+        finally:
+            receive_task.cancel()
+            await websocket.close()

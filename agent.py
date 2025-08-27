@@ -6,7 +6,17 @@ from datetime import datetime
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
 from time import sleep
-from typing import Annotated, Any, Dict, Generator, List, Optional, Tuple, TypedDict
+from typing import (
+    Annotated,
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    TypedDict,
+    Union,
+)
 from uuid import uuid4
 
 import yaml
@@ -14,7 +24,13 @@ from pocketflow import Flow, Node
 from pydantic import BaseModel, ValidationError, conint
 
 import db
-from communication import AgentToParentMessage
+from communication import (
+    AgentToParentMessage,
+    ATPM_Debug,
+    ATPM_Error,
+    ATPM_Message,
+    ATPM_ToUser,
+)
 from config import (
     CTX_WINDOW,
     FLUSH_TGT_TOK_FRAC,
@@ -432,8 +448,6 @@ def create_new_agent(
 
 
 def list_agents() -> List[Tuple[str, datetime]]:
-    agent_infos = []
-
     return db.sqlite_db_read_query("SELECT id, created_at FROM agents;")
 
 
@@ -524,7 +538,11 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
         conn.close()
 
 
-def call_agent(agent_id: str) -> Generator[Dict[str, Any], str, None]:
+def call_agent(
+    agent_id: str,
+) -> Generator[
+    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, None], str, None
+]:
     parent_conn, child_conn = Pipe()
     p = Process(target=call_agent_worker, args=(agent_id, child_conn))
     p.start()
@@ -581,7 +599,7 @@ def call_agent_cli_test(agent_id: str):
                     break
                 print(item)
                 halt_now = True
-                time.sleep(1)
+                sleep(1)
             else:
                 print("Requesting immediate halt...")
 
