@@ -3,6 +3,15 @@
 - need to be able to query messages between leaving and joining back (because heartbeat)
 - websockets used for convo streaming
 
+2. [ ] Create semaphores and make the stream endpt `send msg+stream`
+```
+import asyncio
+from collections import defaultdict
+
+# Dictionary to store semaphores per ID
+id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 per ID
+```
+
 2. [ ] Create heartbeat system (bg daemon using https://apscheduler.readthedocs.io/en/3.x/)
 
 3. [ ] Create suitable frontend (FastAPI or Gradio)
