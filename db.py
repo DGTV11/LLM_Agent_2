@@ -3,7 +3,10 @@ from os import path
 from sqlite3 import Error
 from typing import Any, List, Optional, Tuple, Union
 
+import chromadb
 
+
+# *Helper functions
 def sqlite_db_write_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> Union[int, float, str, bytes, None]:  # values can be tuple
@@ -36,6 +39,13 @@ def sqlite_db_read_query(
     # print(f"Successfully ran read query {query} with values {values}")
 
     return results
+
+
+create_chromadb_client = lambda: chromadb.HttpClient(
+    host="localhost",
+    port=8000,
+    settings=chromadb.config.Settings(anonymized_telemetry=False),
+)
 
 
 # *Init SQLite DB

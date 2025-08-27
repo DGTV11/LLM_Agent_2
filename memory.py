@@ -6,7 +6,6 @@ from os import path
 from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
-import chromadb
 import yaml
 from pocketflow import Node
 from pydantic import BaseModel
@@ -268,11 +267,9 @@ class ArchivalStorage:
     collection: Any = field(init=False, default=None)
 
     def __post_init__(self) -> None:
-        self.collection = chromadb.HttpClient(
-            host="localhost",
-            port=8000,
-            settings=chromadb.config.Settings(anonymized_telemetry=False),
-        ).get_or_create_collection(name=self.agent_id)
+        self.collection = db.create_chromadb_client().get_or_create_collection(
+            name=self.agent_id
+        )
         # self.collection = chromadb.PersistentClient(
         #     path=path.dirname(__file__),
         #     settings=chromadb.config.Settings(anonymized_telemetry=False),
@@ -318,17 +315,17 @@ class ArchivalStorage:
             n_results=offset + count,
             where=({"category": category} if category else None),
         )
-    
+
         documents = query_res.get("documents", [[]])[0]
         metadatas = query_res.get("metadatas", [[]])[0]
-    
+
         results = [
             {"document": doc, "metadata": meta}
             for doc, meta in zip(documents, metadatas)
         ]
-    
-        return results[offset:offset + count]
-    
+
+        return results[offset : offset + count]
+
     def __repr__(self) -> str:
         return f"""
 Archival storage contains {len(self)} entries

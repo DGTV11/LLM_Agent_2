@@ -430,24 +430,39 @@ def create_new_agent(
     return agent_id
 
 
-def list_agents() -> List[Tuple[str, str, str, List[str], datetime]]:
+def list_agents() -> List[Tuple[str, datetime]]:
     agent_infos = []
 
-    for id, optional_function_sets_json, created_at in db.sqlite_db_read_query(
-        "SELECT id, optional_function_sets, created_at FROM agents;"
-    ):
-        agent_infos.append(
-            (
-                id,
-                *db.sqlite_db_read_query(
-                    "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = ?;",
-                    (id,),
-                )[0],
-                json.loads(optional_function_sets_json),
-                datetime.fromisoformat(created_at),
-            )
-        )
-    return agent_infos  # id, agent_persona, user_persona, optional_function_sets, created_at
+    return db.sqlite_db_read_query("SELECT id, created_at FROM agents;")
+
+
+def get_agent_info(agent_id: str) -> Tuple[str, str, List[str], datetime]:
+    optional_function_sets_json, created_at = db.sqlite_db_read_query(
+        "SELECT optional_function_sets, created_at FROM agents WHERE id = ?;",
+        (agent_id,),
+    )[0]
+
+    return (
+        *db.sqlite_db_read_query(
+            "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = ?;",
+            (agent_id,),
+        )[0],
+        json.loads(optional_function_sets_json),
+        datetime.fromisoformat(created_at),
+    )
+
+
+def delete_agent(agent_id: str) -> None:
+    db.sqlite_db_write_query("DELETE FROM agents WHERE id = ?;", (agent_id,))
+    db.sqlite_db_write_query(
+        "DELETE FROM working_context WHERE agent_id = ?;", (agent_id,)
+    )
+    db.sqlite_db_write_query(
+        "DELETE FROM recall_storage WHERE agent_id = ?;", (agent_id,)
+    )
+    db.sqlite_db_write_query("DELETE FROM fifo_queue WHERE agent_id = ?;", (agent_id,))
+
+    db.create_chromadb_client().delete_collection(agent_id)
 
 
 def list_optional_function_sets() -> List[str]:  # TODO
@@ -577,13 +592,7 @@ def main():
 
     if use_existing:
         print("Agent ids:")
-        for (
-            id,
-            agent_persona,
-            user_persona,
-            optional_function_sets,
-            created_at,
-        ) in list_agents():
+        for id, created_at in list_agents():
             print(f"- {id}")
 
         agent_id = input("Enter agent ID: ").strip()
