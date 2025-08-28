@@ -122,3 +122,16 @@ async def send_message(agent_id: str, websocket: WebSocket):
 
 
 # * Frontend
+@app.get("/")
+def home_page():  # home screen with list of agents (RD) and link to create
+    pass
+
+
+@app.get("/create")
+def create_page():  # *C*reate agent (also include ai persona gen)
+    pass
+
+
+@app.get("/{agent}")
+def chat_page():  # chat with agent (U)
+    pass
