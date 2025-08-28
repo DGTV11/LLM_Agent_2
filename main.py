@@ -3,7 +3,9 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 import agent
@@ -11,6 +13,7 @@ import persona_gen
 from memory import Message, TextContent
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 agent_semaphores: defaultdict[str, asyncio.Semaphore] = defaultdict(
     lambda: asyncio.Semaphore(1)
@@ -123,8 +126,10 @@ async def send_message(agent_id: str, websocket: WebSocket):
 
 # * Frontend
 @app.get("/")
-def home_page():  # home screen with list of agents (RD) and link to create
-    pass
+def home_page(
+    request: Request,
+):  # home screen with list of agents (RD) and link to create
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.get("/create")
