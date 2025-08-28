@@ -415,7 +415,7 @@ def get_agent_flow(memory: Memory):
 # *Agent runner functions
 def create_new_agent(
     optional_function_sets: List[str], agent_persona: str, user_persona: Optional[str]
-):
+) -> str:
     agent_id = str(uuid4())
 
     db.sqlite_db_write_query(

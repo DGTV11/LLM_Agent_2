@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM_Agent_2</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+<h1>Create New Agent</h1>  
+<form id='create-with-raw-agent-persona' method="POST" action="{{ url_for('create_agent_using_raw_agent_persona') }}">
+  <label for="agent_persona">Agent persona</label>
+  <br>
+  <textarea id="agent_persona" name="agent_persona" placeholder="Enter agent persona" required></textarea>
+  
+  <br>
+  <br>
+
+  <label for="human_persona">Human persona</label>
+  <br>
+  <textarea id="human_persona" name="human_persona" placeholder="Enter user persona (optional)"></textarea>
+
+  <br>
+  <br>
+  
+  <label for="optional_function_sets">Optional function sets</label>
+  <br>
+  <select name="optional_function_sets" id="optional_function_sets" multiple>
+    {% for ofc in optional_function_sets %}
+      <option value="{{ ofc }}">{{ ofc }}</option>
+    {% endfor %}
+  </select>
+
+  <br>
+  <br>
+
+  <button type="submit">Create agent</button>
+  <button type="button" id="trigger-gen-form">Use goal-based agent persona generator</button>
+</form>
+
+<form id='create-with-generated-agent-persona' method="POST" action="{{ url_for('create_agent_using_generated_agent_persona') }}" style="display: none;">
+  <label for="agent_goals">Agent goals</label>
+  <br>
+  <textarea id="agent_goals" name="agent_goals" placeholder="Enter your agent's goals" required>Provide companionship to the user</textarea>
+
+  <br>
+  <br>
+
+  <label for="human_persona">Human persona</label>
+  <br>
+  <textarea id="human_persona" name="human_persona" placeholder="Enter user persona (optional)"></textarea>
+
+  <br>
+  <br>
+
+  <label for="optional_function_sets">Optional function sets</label>
+  <br>
+  <select name="optional_function_sets" id="optional_function_sets" multiple>
+    {% for ofc in optional_function_sets %}
+      <option value="{{ ofc }}">{{ ofc }}</option>
+    {% endfor %}
+  </select>
+
+  <br>
+  <br>
+
+  <button type="submit">Create agent</button>
+  <button type="button" id="trigger-raw-form">Use raw agent persona</button>
+</form>
+<button type="button"><a href="{{ url_for('home_page') }}">Back to home</a></button>
+</body>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const genFormBtn = document.getElementById("trigger-gen-form");
+    const rawFormBtn = document.getElementById("trigger-raw-form");
+    const genForm = document.getElementById("create-with-generated-agent-persona");
+    const rawForm = document.getElementById("create-with-raw-agent-persona");
+
+    genFormBtn.addEventListener("click", function () {
+        if (genForm.style.display === "block") {
+            genForm.style.display = "none";
+        } else {
+            genForm.style.display = "block";
+            rawForm.style.display = "none";
+        }
+    });
+
+    rawFormBtn.addEventListener("click", function () {
+        if (rawForm.style.display === "block") {
+            rawForm.style.display = "none";
+        } else {
+            rawForm.style.display = "block";
+            genForm.style.display = "none";
+        }
+    });
+});
+</script>
+</html>

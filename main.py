@@ -1,10 +1,10 @@
 import asyncio
 from collections import defaultdict
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Annotated, List, Literal, Optional
 
-from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request, WebSocket
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -134,9 +134,43 @@ def home_page(
     )
 
 
+@app.post("/create/raw-agent-persona")
+def create_agent_using_raw_agent_persona(
+    agent_persona: Annotated[str, Form()],
+    human_persona: Annotated[Optional[str], Form()],
+    optional_function_sets: Annotated[List[str], Form],
+):
+    agent_id = agent.create_new_agent(
+        optional_function_sets,
+        agent_persona,
+        user_persona,
+    )
+
+    return RedirectResponse(f"/{agent_id}")
+
+
+@app.post("/create/generated-agent-persona")
+def create_agent_using_generated_agent_persona(
+    agent_goals: Annotated[str, Form()],
+    human_persona: Annotated[Optional[str], Form()],
+    optional_function_sets: Annotated[List[str], Form],
+):
+    agent_id = agent.create_new_agent(
+        optional_function_sets,
+        persona_gen.generate_persona(agent_goals),
+        user_persona,
+    )
+
+    return RedirectResponse(f"/{agent_id}")
+
+
 @app.get("/create")
-def create_page():  # *C*reate agent (also include ai persona gen)
-    pass
+def create_page(request: Request):  # *C*reate agent (also include ai persona gen)
+    return templates.TemplateResponse(
+        request=request,
+        name="create.html",
+        context={"optional_function_sets": agent.list_optional_function_sets()},
+    )
 
 
 @app.get("/{agent_id}")

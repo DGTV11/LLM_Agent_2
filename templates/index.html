@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Menu</title>
+  <title>LLM_Agent_2</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -11,13 +11,38 @@
   </style>
 </head>
 <body>
-  <h1>LLM_Agent_2 Menu</h1>
+  <h1>Menu</h1>
   <div>
     <ul>
       {% for id, created_at in agent_infos %}
         <a href="{{ url_for('chat_page', agent_id=id) }}">{{ id }} (created at {{ created_at }})</a>
+        <button type="button" class="fetch-btn" data-url="/api/agents/{{ id }}">Delete</button>
       {% endfor %}
     </ul>
   </div>
+  <button type="button"><a href="{{ url_for('create_page') }}">Create new agent</a></button>
 </body>
+<script>
+  async function deleteAgent(url) {
+    const response = await fetch(url, { method: 'DELETE' });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  // Add event listener to all matching buttons
+  document.querySelectorAll('.fetch-btn').forEach(button => {
+    button.addEventListener('click', async (event) => {
+      try {
+        const url = event.target.dataset.url;
+        await deleteAgent(url);
+        event.target.closest('div').remove();
+      } catch (error) {
+        console.error('Failed to delete agent:', error);
+        alert('Error: Could not delete agent.');
+      }
+    });
+  });
+</script>
 </html>
