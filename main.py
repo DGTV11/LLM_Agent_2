@@ -21,27 +21,27 @@ class AgentGoals(BaseModel):
     goals: str
 
 
-@app.post("/persona-generator")
+@app.post("/api/persona-generator")
 def generate_persona(agent_goals: AgentGoals):
     return persona_gen.generate_persona(agent_goals.goals)
 
 
-@app.get("/optional-function-sets")
+@app.get("/api/optional-function-sets")
 def list_optional_function_sets():
     return agent.list_optional_function_sets()
 
 
-@app.get("/agents")
+@app.get("/api/agents")
 def list_agents():
     return agent.list_agents()
 
 
-@app.get("/agents/{agent_id}")
+@app.get("/api/agents/{agent_id}")
 def get_agent_info(agent_id: str):
     return agent.get_agent_info(agent_id)
 
 
-@app.delete("/agents/{agent_id}")
+@app.delete("/api/agents/{agent_id}")
 async def delete_agent(agent_id: str):
     async with agent_semaphores[agent_id]:
         agent.delete_agent(agent_id)
@@ -53,7 +53,7 @@ class AgentDefinition(BaseModel):
     user_persona: Optional[str]
 
 
-@app.post("/agents")
+@app.post("/api/agents")
 def create_agent(agent_definition: AgentDefinition):
     return agent.create_new_agent(
         agent_definition.optional_function_sets,
@@ -67,7 +67,7 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
-@app.post("/agents/{agent_id}/send-message")
+@app.post("/api/agents/{agent_id}/send-message")
 async def send_message_no_stream(
     agent_id: str, user_or_system_message: UserOrSystemMessage
 ):
@@ -82,7 +82,7 @@ async def send_message_no_stream(
         )
 
 
-@app.websocket("/agents/{agent_id}/interact")
+@app.websocket("/api/agents/{agent_id}/interact")
 async def send_message(agent_id: str, websocket: WebSocket):
     async with agent_semaphores[agent_id]:
         await websocket.accept()
