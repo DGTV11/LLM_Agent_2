@@ -17,6 +17,9 @@ agent_semaphores: defaultdict[str, asyncio.Semaphore] = defaultdict(
 )
 
 
+# *Backend API
+
+
 class AgentGoals(BaseModel):
     goals: str
 
@@ -116,3 +119,6 @@ async def send_message(agent_id: str, websocket: WebSocket):
         finally:
             receive_task.cancel()
             await websocket.close()
+
+
+# * Frontend
