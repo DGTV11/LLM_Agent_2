@@ -129,7 +129,9 @@ async def send_message(agent_id: str, websocket: WebSocket):
 def home_page(
     request: Request,
 ):  # home screen with list of agents (RD) and link to create
-    return templates.TemplateResponse(request=request, name="index.html")
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"agent_infos": agent.list_agents()}
+    )
 
 
 @app.get("/create")
@@ -137,6 +139,6 @@ def create_page():  # *C*reate agent (also include ai persona gen)
     pass
 
 
-@app.get("/{agent}")
+@app.get("/{agent_id}")
 def chat_page():  # chat with agent (U)
     pass

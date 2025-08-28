@@ -12,5 +12,12 @@
 </head>
 <body>
   <h1>LLM_Agent_2 Menu</h1>
+  <div>
+    <ul>
+      {% for id, created_at in agent_infos %}
+        <a href="{{ url_for('chat_page', agent_id=id) }}">{{ id }} (created at {{ created_at }})</a>
+      {% endfor %}
+    </ul>
+  </div>
 </body>
 </html>
