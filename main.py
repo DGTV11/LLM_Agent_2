@@ -67,7 +67,7 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
-@app.post("/agents/{agent_id}/send-message/no-stream")
+@app.post("/agents/{agent_id}/send-message")
 async def send_message_no_stream(
     agent_id: str, user_or_system_message: UserOrSystemMessage
 ):
@@ -82,20 +82,9 @@ async def send_message_no_stream(
         )
 
 
-@app.websocket("/agents/{agent_id}/send-message")
-async def send_message(
-    agent_id: str, user_or_system_message: UserOrSystemMessage, websocket: WebSocket
-):
+@app.websocket("/agents/{agent_id}/interact")
+async def send_message(agent_id: str, websocket: WebSocket):
     async with agent_semaphores[agent_id]:
-        memory = agent.get_memory_object(agent_id)
-        memory.push_message(
-            Message(
-                message_type=user_or_system_message.message_type,
-                timestamp=datetime.now(),
-                content=TextContent(message=user_or_system_message.message),
-            )
-        )
-
         await websocket.accept()
 
         gen = agent.call_agent(agent_id)
