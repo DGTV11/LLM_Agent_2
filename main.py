@@ -74,9 +74,7 @@ class UserOrSystemMessage(BaseModel):
 
 
 @app.post("/api/agents/{agent_id}/send-message")
-async def send_message_no_stream(
-    agent_id: str, user_or_system_message: UserOrSystemMessage
-):
+async def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
     async with agent_semaphores[agent_id]:
         memory = agent.get_memory_object(agent_id)
         memory.push_message(
@@ -89,7 +87,7 @@ async def send_message_no_stream(
 
 
 @app.websocket("/api/agents/{agent_id}/interact")
-async def send_message(agent_id: str, websocket: WebSocket):
+async def interact(agent_id: str, websocket: WebSocket):
     async with agent_semaphores[agent_id]:
         await websocket.accept()
 
@@ -140,7 +138,7 @@ def home_page(
 def create_agent_using_raw_agent_persona(
     agent_persona: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(None),
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form([]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -155,7 +153,7 @@ def create_agent_using_raw_agent_persona(
 def create_agent_using_generated_agent_persona(
     agent_goals: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(None),
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form([]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -176,9 +174,10 @@ def create_page(request: Request):
 
 
 @app.get("/{agent_id}")
-def chat_page(request: Request):
+def chat_page(agent_id: str, request: Request):
     return templates.TemplateResponse(
         request=request,
         name="chat.html",
+        context={"agent_id": agent_id},
         # context={"optional_function_sets": agent.list_optional_function_sets()},
     )

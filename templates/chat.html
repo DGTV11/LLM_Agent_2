@@ -11,9 +11,125 @@
       }
     </style>
   </head>
-  <body class="p-8">
+  <body class="p-8 w-full">
     <h1 class="font-bold text-8xl pb-8">Chat</h1>
-    <div></div>
+    <p>You are chatting with an agent with id {{ agent_id }}</p>
+    <div class="grid grid-cols-[3fr_1fr] grid-rows-1">
+      <div class="p-4">
+        <h2 class="font-bold text-4xl pb-4">Conversation</h2>
+        <ul id="messages" class='flex flex-cols gap-2'></ul> 
+        <!-- todo: fix flex cols -->
+        <form
+          class="w-full grid grid-cols-[3fr_1fr] gap-2 border-black border-2 p-2"
+          action=""
+          onsubmit="sendMessage(event)"
+        >
+          <input
+            type="text"
+            id="messageText"
+            name="messageText"
+            value=""
+            placeholder="Type message here"
+            required
+          />
+          <button
+            class="font-bold text-green-600"
+            type="submit"
+            id="messageSendBtn"
+          >
+            Send message
+          </button>
+        </form>
+      </div>
+      <div class="p-4">
+        <h2 class="font-bold text-4xl pb-4">Consciousness Stream</h2>
+        <ul id="consciousness-stream" class='flex flex-cols gap-2'></ul>
+        <div class="flex gap-4">
+          <button class="font-bold text-yellow-600" type="submit">
+            Halt soon
+          </button>
+          <button class="font-bold text-red-600" type="submit">Halt now</button>
+        </div>
+      </div>
+    </div>
+      <div class="grid justify-items-start p-2">
+          <button type="button" class="font-bold">
+              <a href="{{ url_for("home_page") }}">Back to home</a>
+          </button>
+      </div>
+
   </body>
-  <script></script>
+  <!-- <script src="esprima.js"></script> -->
+  <!-- <script src="js-yaml.min.js"></script> -->
+  <script>
+    function sendMessage(event) {
+      const input = document.getElementById("messageText");
+      const messageSendBtn = document.getElementById("messageSendBtn");
+      messageSendBtn.disabled = true;
+
+      data = {
+        message_type: "user",
+        message: input.value
+      }
+
+      const messages = document.getElementById("messages");
+      const consciousness_stream = document.getElementById("consciousness-stream");
+
+      var message = document.createElement("li");
+      var content = document.createTextNode(input.value);
+      message.appendChild(content);
+      messages.appendChild(message);
+
+      consciousness_stream.innerHTML = '';
+
+      const response = fetch(
+        "{{ url_for('send_message', agent_id=agent_id) }}",
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        },
+      ).then(
+        (response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json(); // parse JSON response
+          }      
+      );
+
+      const ws = new WebSocket("{{ url_for('interact', agent_id=agent_id) }}");
+      input.value = "";
+
+      ws.onmessage = function (event) {
+        const atpm = JSON.parse(event.data);
+        console.log(atpm);
+
+        const cs_atpm = document.createElement("li");
+        const cs_content = document.createTextNode(event.data);
+        // cs_content.appendChild(jsyaml.safeDump(atpm));
+        cs_atpm.appendChild(cs_content);
+        consciousness_stream.appendChild(cs_atpm);
+
+        if (atpm.message_type === "to_user") {
+          var message = document.createElement("li");
+          var content = document.createTextNode(atpm.payload);
+          message.appendChild(content);
+          messages.appendChild(message);
+        } else if (atpm.message_type === "halt") {
+          ws.close();
+          messageSendBtn.disabled = false;
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        messageSendBtn.disabled = false; // re-enable even on error
+      };
+
+      event.preventDefault();
+    }
+  </script>
 </html>

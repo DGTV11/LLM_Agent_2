@@ -559,6 +559,7 @@ def call_agent(
                         json.loads(parent_conn.recv())
                     ).root
                     if msg.message_type == "halt":
+                        yield msg
                         break
                 else:
                     msg = None
