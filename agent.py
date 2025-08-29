@@ -444,6 +444,8 @@ def create_new_agent(
         ),
     )
 
+    db.create_chromadb_client().create_collection(agent_id)
+
     return agent_id
 
 

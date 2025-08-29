@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Annotated, List, Literal, Optional
 
-from fastapi import FastAPI, Form, Request, WebSocket
+from fastapi import FastAPI, Form, Request, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -128,17 +128,19 @@ async def send_message(agent_id: str, websocket: WebSocket):
 @app.get("/")
 def home_page(
     request: Request,
-):  # home screen with list of agents (RD) and link to create
+):
     return templates.TemplateResponse(
-        request=request, name="index.html", context={"agent_infos": agent.list_agents()}
+        request=request,
+        name="index.html",
+        context={"agent_infos": agent.list_agents()},
     )
 
 
 @app.post("/create/raw-agent-persona")
 def create_agent_using_raw_agent_persona(
     agent_persona: Annotated[str, Form()],
-    human_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[List[str], Form],
+    user_persona: Annotated[Optional[str], Form()],
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(None),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -146,14 +148,14 @@ def create_agent_using_raw_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}")
+    return RedirectResponse(f"/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.post("/create/generated-agent-persona")
 def create_agent_using_generated_agent_persona(
     agent_goals: Annotated[str, Form()],
-    human_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[List[str], Form],
+    user_persona: Annotated[Optional[str], Form()],
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(None),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -161,11 +163,11 @@ def create_agent_using_generated_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}")
+    return RedirectResponse(f"/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.get("/create")
-def create_page(request: Request):  # *C*reate agent (also include ai persona gen)
+def create_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="create.html",
@@ -174,5 +176,9 @@ def create_page(request: Request):  # *C*reate agent (also include ai persona ge
 
 
 @app.get("/{agent_id}")
-def chat_page():  # chat with agent (U)
-    pass
+def chat_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="chat.html",
+        # context={"optional_function_sets": agent.list_optional_function_sets()},
+    )
