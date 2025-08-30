@@ -381,7 +381,7 @@ class RecallStorage:
     def date_search(self, start_timestamp: str, end_timestamp: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN '?' AND '?'",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN ? AND ?",
             (self.agent_id, start_timestamp, end_timestamp),
         ):
             message_dict = {
