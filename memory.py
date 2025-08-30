@@ -449,7 +449,7 @@ class FIFOQueue:
             "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = ?);",
             (self.agent_id, self.agent_id),
         )
-        print(db_res)
+        # print(db_res)
 
         if len(db_res) == 0:
             raise ValueError("Message queue empty!")

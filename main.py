@@ -7,6 +7,7 @@ from fastapi import FastAPI, Form, Request, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.websockets import WebSocketState
 
 import agent
 import persona_gen
@@ -119,7 +120,8 @@ async def interact(agent_id: str, websocket: WebSocket):
                 await asyncio.sleep(0.05)  # small sleep to avoid tight loop
         finally:
             receive_task.cancel()
-            await websocket.close()
+            if websocket.application_state != WebSocketState.DISCONNECTED:
+                await websocket.close()
 
 
 @app.post("/api/agents/{agent_id}/query")
