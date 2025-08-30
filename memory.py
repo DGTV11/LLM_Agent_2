@@ -621,10 +621,15 @@ class Memory:
             ).strip()
         ]
 
-        while (
-            self.in_ctx_no_tokens > FLUSH_TGT_TOK_FRAC * CTX_WINDOW
-            or (msg := self.fifo_queue.peek_message()).message_type != "user"
-        ):
+        while True:
+            msg = self.fifo_queue.peek_message()
+
+            if (
+                self.in_ctx_no_tokens <= FLUSH_TGT_TOK_FRAC * CTX_WINDOW
+                and msg.message_type == "user"
+            ):
+                break
+
             if len(
                 self.fifo_queue
             ) <= FLUSH_MIN_FIFO_QUEUE_LEN and msg.message_type in [

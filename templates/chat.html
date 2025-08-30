@@ -11,13 +11,13 @@
       }
     </style>
   </head>
-  <body class="p-8 w-full">
+  <body class="p-8 w-full h-screen flex flex-col">
     <h1 class="font-bold text-8xl pb-8">Chat</h1>
     <p>You are chatting with an agent with id {{ agent_id }}</p>
-    <div class="grid grid-cols-[3fr_1fr] grid-rows-1">
-      <div class="p-4">
+    <div class="grid grid-cols-[3fr_1fr] gap-4 flex-1 min-h-0">
+      <div class="p-4 flex flex-col min-h-0 gap-2">
         <h2 class="font-bold text-4xl pb-4">Conversation</h2>
-        <ul id="messages" class='flex flex-col gap-2 [&>ul]:text-wrap [&>ul]:p-2'></ul> 
+        <ul id="messages" class='flex flex-1 overflow-auto flex-col gap-2 [&>li]:text-wrap [&>li]:p-2 [&>li]:border-black [&>li]:border-2 overflow-auto max-h-full'></ul> 
         <div
           class="w-full grid grid-cols-[3fr_1fr] gap-2 border-black border-2 p-2"
         >
@@ -38,11 +38,16 @@
             Send message
           </button>
         </div>
+        <div class="grid justify-items-start p-2">
+            <button type="button" class="font-bold">
+                <a href="{{ url_for("home_page") }}">Back to home</a>
+            </button>
+        </div>
       </div>
-      <div class="p-4">
+      <div class="p-4 flex flex-col min-h-0 gap-2">
         <h2 class="font-bold text-4xl pb-4">Consciousness Stream</h2>
         <p>Status: <span id="cs-status" class="text-red-600">&#9679;</span></p>
-        <ul id="consciousness-stream" class='flex flex-col gap-2 [&>ul]:text-wrap [&>ul]:p-2'></ul>
+        <ul id="consciousness-stream" class='flex flex-1 overflow-auto flex-col gap-2 [&>li]:text-wrap [&>li]:p-2 [&>li]:border-black [&>li]:border-2 overflow-auto max-h-full'></ul>
         <div class="flex gap-4">
           <button class="font-bold text-yellow-600" type="submit">
             Halt soon
@@ -51,16 +56,15 @@
         </div>
       </div>
     </div>
-      <div class="grid justify-items-start p-2">
-          <button type="button" class="font-bold">
-              <a href="{{ url_for("home_page") }}">Back to home</a>
-          </button>
-      </div>
   </body>
   <!-- <script src="esprima.js"></script> -->
   <!-- <script src="js-yaml.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
   <script>
+    function scrollToBottom(container) {
+      container.scrollTop = container.scrollHeight;
+    }
+
     function invokeWSLoop() {
       const messageSendBtn = document.getElementById("messageSendBtn");
       const input = document.getElementById("messageText");
@@ -71,7 +75,7 @@
 
       input.value = "";
       messageSendBtn.disabled = true;
-      csStatusIndicator.className = "text-green-600";
+      csStatusIndicator.className = "text-green-600 animate-pulse";
 
       const ws = new WebSocket("{{ url_for('interact', agent_id=agent_id) }}");
 
@@ -83,12 +87,14 @@
         // cs_content.appendChild(jsyaml.safeDump(atpm));
         cs_atpm.appendChild(cs_content);
         consciousness_stream.appendChild(cs_atpm);
+        scrollToBottom(consciousness_stream);
 
         if (atpm.message_type === "to_user") {
           var message = document.createElement("li");
           var content = document.createTextNode(atpm.payload);
           message.appendChild(content);
           messages.appendChild(message);
+          scrollToBottom(messages);
         } else if (atpm.message_type === "halt") {
           // ws.close(); //error - closed serverside
           csStatusIndicator.className = "text-red-600";
@@ -131,6 +137,10 @@
     function sendMessage() { 
       const input = document.getElementById("messageText");
 
+      if (input.value.trim() === '') {
+        return;
+      }
+
       const messages = document.getElementById("messages");
       const consciousness_stream = document.getElementById("consciousness-stream");
 
@@ -138,6 +148,7 @@
       var content = document.createTextNode(input.value);
       message.appendChild(content);
       messages.appendChild(message);
+      scrollToBottom(messages);
 
       consciousness_stream.innerHTML = '';
     
@@ -176,6 +187,14 @@
       // console.log("Page is about to unload");
       navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
       navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
+    });
+
+    document.getElementById("messageText")
+        .addEventListener("keyup", function(event) {
+        event.preventDefault();
+        if (event.keyCode === 13) {
+            document.getElementById("messageSendBtn").click();
+        }
     });
   </script>
 </html>
