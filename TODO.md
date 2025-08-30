@@ -14,7 +14,7 @@ id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 p
 
 2. [ ] Create heartbeat system (bg daemon using https://apscheduler.readthedocs.io/en/3.x/)
 
-3. [ ] Create suitable frontend (FastAPI or Gradio)
+3. [x] Create suitable frontend (FastAPI or Gradio)
 - modal with messages between leaving and joining back
 - Messages   | Consciousness Stream
   \[history] | Last user message
@@ -23,6 +23,8 @@ id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 p
 4. [ ] Implement optional functions
 - Web search (https://github.com/searxng/searxng)
 - Python runner (https://github.com/vndee/llm-sandbox)
+
+5. Add file upload using the ConceptCycle file upload system
 
 Remember:
 - Web search should spawn a different kind of agent (Research agent)
