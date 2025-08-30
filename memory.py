@@ -446,9 +446,10 @@ class FIFOQueue:
 
     def peek_message(self) -> Message:
         db_res = db.sqlite_db_read_query(
-            "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
-            (self.agent_id,),
+            "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = ?);",
+            (self.agent_id, self.agent_id),
         )
+        print(db_res)
 
         if len(db_res) == 0:
             raise ValueError("Message queue empty!")
@@ -467,8 +468,8 @@ class FIFOQueue:
         last_message = self.peek_message()
 
         db.sqlite_db_write_query(
-            "DELETE FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue);",
-            (self.agent_id,),
+            "DELETE FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = ?);",
+            (self.agent_id, self.agent_id),
         )
 
         return last_message
@@ -630,12 +631,10 @@ class Memory:
             ):
                 break
 
-            if len(
-                self.fifo_queue
-            ) <= FLUSH_MIN_FIFO_QUEUE_LEN and msg.message_type in [
-                "user",
-                "system",
-            ]:
+            if (
+                len(self.fifo_queue) <= FLUSH_MIN_FIFO_QUEUE_LEN
+                and msg.message_type != "assistant"
+            ):
                 break
 
             evicted_message_strs.append(

@@ -11,7 +11,7 @@
         <form id='create-with-raw-agent-persona'
               method="POST"
               action="{{ url_for("create_agent_using_raw_agent_persona") }}"
-              class="grid border-2 border-black divide-2 divide-y-2 divide-black">
+              class="grid border-2 border-black rounded-2xl divide-2 divide-y-2 divide-black">
             <div class="p-2 flex flex-col">
                 <label for="agent_persona" class="font-bold">Agent persona</label>
                 <textarea id="agent_persona"
@@ -46,7 +46,7 @@
         <form id='create-with-generated-agent-persona'
               method="POST"
               action="{{ url_for("create_agent_using_generated_agent_persona") }}"
-              class="grid hidden border-2 border-black divide-2 divide-y-2 divide-black">
+              class="grid hidden border-2 border-black rounded-2xl divide-2 divide-y-2 divide-black">
             <div class="p-2 flex flex-col">
                 <label for="agent_goals" class="font-bold">Agent goals</label>
                 <textarea id="agent_goals"
