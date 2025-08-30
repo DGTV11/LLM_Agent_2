@@ -17,13 +17,12 @@
     <div class="grid grid-cols-[3fr_1fr] grid-rows-1">
       <div class="p-4">
         <h2 class="font-bold text-4xl pb-4">Conversation</h2>
-        <ul id="messages" class='flex flex-cols gap-2'></ul> 
-        <!-- todo: fix flex cols -->
+        <ul id="messages" class='flex flex-col gap-2 [&>ul]:text-wrap [&>ul]:p-2'></ul> 
         <form
           class="w-full grid grid-cols-[3fr_1fr] gap-2 border-black border-2 p-2"
-          action=""
           onsubmit="sendMessage(event)"
         >
+          <!-- action="" -->
           <input
             type="text"
             id="messageText"
@@ -43,7 +42,8 @@
       </div>
       <div class="p-4">
         <h2 class="font-bold text-4xl pb-4">Consciousness Stream</h2>
-        <ul id="consciousness-stream" class='flex flex-cols gap-2'></ul>
+        <p>Status: <span id="cs-status" class="text-red-600">&#9679;</span></p>
+        <ul id="consciousness-stream" class='flex flex-col gap-2 [&>ul]:text-wrap [&>ul]:p-2'></ul>
         <div class="flex gap-4">
           <button class="font-bold text-yellow-600" type="submit">
             Halt soon
@@ -57,58 +57,30 @@
               <a href="{{ url_for("home_page") }}">Back to home</a>
           </button>
       </div>
-
   </body>
   <!-- <script src="esprima.js"></script> -->
   <!-- <script src="js-yaml.min.js"></script> -->
-  <script>
-    function sendMessage(event) {
-      const input = document.getElementById("messageText");
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
+  <script type="module">
+    function invokeWSLoop() {
       const messageSendBtn = document.getElementById("messageSendBtn");
-      messageSendBtn.disabled = true;
-
-      data = {
-        message_type: "user",
-        message: input.value
-      }
+      const input = document.getElementById("messageText");
 
       const messages = document.getElementById("messages");
       const consciousness_stream = document.getElementById("consciousness-stream");
+      const csStatusIndicator = document.getElementById("cs-status");
 
-      var message = document.createElement("li");
-      var content = document.createTextNode(input.value);
-      message.appendChild(content);
-      messages.appendChild(message);
-
-      consciousness_stream.innerHTML = '';
-
-      const response = fetch(
-        "{{ url_for('send_message', agent_id=agent_id) }}",
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        },
-      ).then(
-        (response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json(); // parse JSON response
-          }      
-      );
+      input.value = "";
+      messageSendBtn.disabled = true;
+      csStatusIndicator.className = "text-green-600";
 
       const ws = new WebSocket("{{ url_for('interact', agent_id=agent_id) }}");
-      input.value = "";
 
       ws.onmessage = function (event) {
         const atpm = JSON.parse(event.data);
-        console.log(atpm);
 
         const cs_atpm = document.createElement("li");
-        const cs_content = document.createTextNode(event.data);
+        const cs_content = document.createTextNode(jsyaml.dump(atpm));
         // cs_content.appendChild(jsyaml.safeDump(atpm));
         cs_atpm.appendChild(cs_content);
         consciousness_stream.appendChild(cs_atpm);
@@ -119,17 +91,93 @@
           message.appendChild(content);
           messages.appendChild(message);
         } else if (atpm.message_type === "halt") {
-          ws.close();
+          // ws.close(); //error - closed serverside
+          csStatusIndicator.className = "text-red-600";
           messageSendBtn.disabled = false;
         }
       };
 
       ws.onerror = (err) => {
         console.error("WebSocket error:", err);
+        csStatusIndicator.className = "text-red-600";
         messageSendBtn.disabled = false; // re-enable even on error
       };
-
-      event.preventDefault();
     }
+
+    function sendMessageToAPI(message_type, message) {
+      const data = {
+        message_type,
+        message
+      }
+
+      return fetch(
+        "{{ url_for('send_message', agent_id=agent_id) }}",
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        },
+        ).then(
+          (response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json(); // parse JSON response
+          }      
+        );
+    }
+
+    function sendMessage(event) { 
+      event.preventDefault();
+      const input = document.getElementById("messageText");
+
+      const messages = document.getElementById("messages");
+      const consciousness_stream = document.getElementById("consciousness-stream");
+
+      var message = document.createElement("li");
+      var content = document.createTextNode(input.value);
+      message.appendChild(content);
+      messages.appendChild(message);
+
+      consciousness_stream.innerHTML = '';
+    
+      sendMessageToAPI('user', input.value);
+      invokeWSLoop();
+    }
+
+    window.addEventListener("load", function () {
+      // console.log("Page fully loaded");
+      const params = new URLSearchParams(window.location.search);
+      const firstInteraction = params.get("fi");
+
+      let entryMsg = ""
+      if (firstInteraction) {
+        entryMsg = "A new user has entered the conversation. You should greet the user then get to know him.";
+        params.delete("fi");
+        const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+        window.history.replaceState({}, "", newUrl);
+      } else {
+        entryMsg = "The user has re-entered the conversation. You should greet the user then carry on where you had left off.";
+      }
+
+      sendMessageToAPI('system', entryMsg);
+      invokeWSLoop();
+    });
+
+    // window.addEventListener("visibilitychange", function () {
+    //   // console.log("Page is about to unload");
+    //   if (document.visibilityState === "hidden") {
+    //     navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
+    //     navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
+    //   }
+    // });
+
+    window.addEventListener("beforeunload", function () {
+      // console.log("Page is about to unload");
+      navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
+      navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
+    });
   </script>
 </html>

@@ -122,6 +122,20 @@ async def interact(agent_id: str, websocket: WebSocket):
             await websocket.close()
 
 
+@app.websocket("/api/agents/{agent_id}/query")
+async def interact_no_stream(agent_id: str):
+    async with agent_semaphores[agent_id]:
+        gen = agent.call_agent(agent_id)
+        msg = next(gen)
+
+        while True:
+            try:
+                msg = next(gen)
+            except StopIteration:
+                break
+            await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+
+
 # * Frontend
 @app.get("/")
 def home_page(
@@ -146,7 +160,7 @@ def create_agent_using_raw_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(f"/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.post("/create/generated-agent-persona")
@@ -161,7 +175,7 @@ def create_agent_using_generated_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(f"/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.get("/create")
