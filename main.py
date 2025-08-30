@@ -115,13 +115,15 @@ async def interact(agent_id: str, websocket: WebSocket):
         try:
             while True:
                 msg = await queue.get()
-                await websocket.send_json(msg.model_dump())
+                if msg:
+                    await websocket.send_json(msg.model_dump())
 
                 try:
                     new_msg = next(gen)
                     await queue.put(new_msg)
                 except StopIteration:
-                    break
+                    if queue.empty():
+                        break
         finally:
             receive_task.cancel()
             if websocket.application_state != WebSocketState.DISCONNECTED:
