@@ -1,7 +1,7 @@
 import asyncio
 from collections import defaultdict
 from datetime import datetime
-from typing import Annotated, List, Literal, Optional
+from typing import Annotated, DefaultDict, List, Literal, Optional
 
 from fastapi import FastAPI, Form, Request, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -16,7 +16,7 @@ from memory import Message, TextContent
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-agent_semaphores: defaultdict[str, asyncio.Semaphore] = defaultdict(
+agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
     lambda: asyncio.Semaphore(1)
 )
 
@@ -93,31 +93,35 @@ async def interact(agent_id: str, websocket: WebSocket):
         await websocket.accept()
 
         gen = agent.call_agent(agent_id)
-        msg = next(gen)  # start generator
+        queue = asyncio.Queue()
+
+        # Prime the generator
+        first_msg = next(gen)
+        await queue.put(first_msg)
 
         async def receive_commands():
-            try:
-                while True:
+            while True:
+                try:
                     data = await websocket.receive_json()
                     command = data.get("command")
                     if command:
-                        nonlocal msg
-                        msg = gen.send(command)
-            except Exception:
-                pass
+                        new_msg = gen.send(command)
+                        await queue.put(new_msg)
+                except Exception:
+                    break
 
-        # Run command receiver in background
         receive_task = asyncio.create_task(receive_commands())
 
         try:
             while True:
-                if msg:
-                    await websocket.send_json(msg.model_dump())
+                msg = await queue.get()
+                await websocket.send_json(msg.model_dump())
+
                 try:
-                    msg = next(gen)
+                    new_msg = next(gen)
+                    await queue.put(new_msg)
                 except StopIteration:
                     break
-                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
         finally:
             receive_task.cancel()
             if websocket.application_state != WebSocketState.DISCONNECTED:
