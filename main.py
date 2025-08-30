@@ -122,7 +122,7 @@ async def interact(agent_id: str, websocket: WebSocket):
             await websocket.close()
 
 
-@app.websocket("/api/agents/{agent_id}/query")
+@app.post("/api/agents/{agent_id}/query")
 async def interact_no_stream(agent_id: str):
     async with agent_semaphores[agent_id]:
         gen = agent.call_agent(agent_id)

@@ -18,11 +18,9 @@
       <div class="p-4">
         <h2 class="font-bold text-4xl pb-4">Conversation</h2>
         <ul id="messages" class='flex flex-col gap-2 [&>ul]:text-wrap [&>ul]:p-2'></ul> 
-        <form
+        <div
           class="w-full grid grid-cols-[3fr_1fr] gap-2 border-black border-2 p-2"
-          onsubmit="sendMessage(event)"
         >
-          <!-- action="" -->
           <input
             type="text"
             id="messageText"
@@ -33,12 +31,13 @@
           />
           <button
             class="font-bold text-green-600"
-            type="submit"
+            type="button"
             id="messageSendBtn"
+            onclick="sendMessage()"
           >
             Send message
           </button>
-        </form>
+        </div>
       </div>
       <div class="p-4">
         <h2 class="font-bold text-4xl pb-4">Consciousness Stream</h2>
@@ -61,7 +60,7 @@
   <!-- <script src="esprima.js"></script> -->
   <!-- <script src="js-yaml.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
-  <script type="module">
+  <script>
     function invokeWSLoop() {
       const messageSendBtn = document.getElementById("messageSendBtn");
       const input = document.getElementById("messageText");
@@ -129,8 +128,7 @@
         );
     }
 
-    function sendMessage(event) { 
-      event.preventDefault();
+    function sendMessage() { 
       const input = document.getElementById("messageText");
 
       const messages = document.getElementById("messages");
