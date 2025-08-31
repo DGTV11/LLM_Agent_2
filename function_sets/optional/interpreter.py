@@ -19,7 +19,7 @@ class ExecutePythonValidator(BaseModel):
 
 class ExecutePython(FunctionNode):
     name = "execute_python"
-    validator = ExecutePython
+    validator = ExecutePythonValidator
 
     def exec_function(
         self,
