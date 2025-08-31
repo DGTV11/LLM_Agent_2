@@ -85,23 +85,27 @@
       ws.onmessage = function (event) {
         const atpm = JSON.parse(event.data);
 
-        const cs_atpm = document.createElement("li");
-        const cs_content = document.createTextNode(jsyaml.dump(atpm));
-        // cs_content.appendChild(jsyaml.safeDump(atpm));
-        cs_atpm.appendChild(cs_content);
-        consciousness_stream.appendChild(cs_atpm);
-        scrollToBottom(consciousness_stream);
+        switch (atpm.message_type) {
+          case "debug":
+            break;
+          case "to_user":
+            var message = document.createElement("li");
+            var content = document.createTextNode(atpm.payload);
+            // message.className = "self-end bg-blue-100 border-blue-600 text-right max-w-[70%]";
+            message.className = "self-end bg-blue-100 border-blue-600 text-left max-w-[70%]";
 
-        if (atpm.message_type === "to_user") {
-          var message = document.createElement("li");
-          var content = document.createTextNode(atpm.payload);
-          // message.className = "self-end bg-blue-100 border-blue-600 text-right max-w-[70%]";
-          message.className = "self-end bg-blue-100 border-blue-600 text-left max-w-[70%]";
-
-          message.appendChild(content);
-          messages.appendChild(message);
-          scrollToBottom(messages);
-        } 
+            message.appendChild(content);
+            messages.appendChild(message);
+            scrollToBottom(messages);
+            break;
+          default:
+            const cs_atpm = document.createElement("li");
+            const cs_content = document.createTextNode(jsyaml.dump(atpm));
+            // cs_content.appendChild(jsyaml.safeDump(atpm));
+            cs_atpm.appendChild(cs_content);
+            consciousness_stream.appendChild(cs_atpm);
+            scrollToBottom(consciousness_stream);
+        }
       };
 
       ws.onerror = (err) => {
