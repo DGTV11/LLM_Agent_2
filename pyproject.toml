@@ -17,6 +17,7 @@ dependencies = [
     "pytz>=2025.2",
     "pyyaml>=6.0.2",
     "semantic-text-splitter>=0.27.0",
+    "sqlalchemy>=2.0.43",
     "transformers>=4.55.3",
     "types-pyyaml>=6.0.12.20250822",
     "types-transformers>=0.1.0",
