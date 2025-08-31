@@ -89,45 +89,49 @@ async def send_message(agent_id: str, user_or_system_message: UserOrSystemMessag
 
 @app.websocket("/api/agents/{agent_id}/interact")
 async def interact(agent_id: str, websocket: WebSocket):
-    async with agent_semaphores[agent_id]:
-        await websocket.accept()
+    await websocket.accept()
 
-        gen = agent.call_agent(agent_id)
-        queue = asyncio.Queue()
+    try:
+        async with agent_semaphores[agent_id]:
+            gen = agent.call_agent(agent_id)
+            queue = asyncio.Queue()
 
-        # Prime the generator
-        first_msg = next(gen)
-        await queue.put(first_msg)
+            # Prime the generator
+            first_msg = next(gen)
+            await queue.put(first_msg)
 
-        async def receive_commands():
-            while True:
-                try:
-                    data = await websocket.receive_json()
-                    command = data.get("command")
-                    if command:
-                        new_msg = gen.send(command)
-                        await queue.put(new_msg)
-                except Exception:
-                    break
-
-        receive_task = asyncio.create_task(receive_commands())
-
-        try:
-            while True:
-                msg = await queue.get()
-                if msg:
-                    await websocket.send_json(msg.model_dump())
-
-                try:
-                    new_msg = next(gen)
-                    await queue.put(new_msg)
-                except StopIteration:
-                    if queue.empty():
+            async def receive_commands():
+                while True:
+                    try:
+                        data = await websocket.receive_json()
+                        command = data.get("command")
+                        if command:
+                            new_msg = gen.send(command)
+                            await queue.put(new_msg)
+                    except Exception:
                         break
-        finally:
-            receive_task.cancel()
-            if websocket.application_state != WebSocketState.DISCONNECTED:
-                await websocket.close()
+
+            receive_task = asyncio.create_task(receive_commands())
+
+            try:
+                while True:
+                    msg = await queue.get()
+                    if msg:
+                        await websocket.send_json(msg.model_dump())
+
+                    try:
+                        new_msg = next(gen)
+                        await queue.put(new_msg)
+                    except StopIteration:
+                        if queue.empty():
+                            break
+            finally:
+                receive_task.cancel()
+    except Exception as e:
+        print(f"WebSocket error for {agent_id}: {e}")
+    finally:
+        if websocket.application_state != WebSocketState.DISCONNECTED:
+            await websocket.close()
 
 
 @app.post("/api/agents/{agent_id}/query")
