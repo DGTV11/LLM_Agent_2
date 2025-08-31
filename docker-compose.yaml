@@ -16,7 +16,7 @@ services:
         #   path: ./pyproject.toml
     volumes:
       - .:/app:rw
-      # - /app/.venv
+      - /app/.venv
       - ./.env:/app/.env
       - ./db.sqlite:/app/db.sqlite
     ports: 
