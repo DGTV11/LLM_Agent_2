@@ -35,7 +35,7 @@ def call_llm(messages: List[Dict[str, str]]) -> str:
             return completion.choices[0].message.content
         except Exception as e:
             last_error = e
-            print(f"{model} failed: {e}")
+            print(f"{model} failed: {e}", flush=True)
 
     raise RuntimeError(f"All models failed: {last_error}")
 
@@ -54,7 +54,7 @@ def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
             return completion.choices[0].message.content
         except Exception as e:
             last_error = e
-            print(f"{model} failed: {e}")
+            print(f"{model} failed: {e}", flush=True)
 
     raise RuntimeError(f"All models failed: {last_error}")
 

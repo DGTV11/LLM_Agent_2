@@ -319,7 +319,7 @@ class ExitOrContinue(Node):
                 message_type="system",
                 timestamp=datetime.now(),
                 content=TextContent(
-                    message=f"You have requested heartbeats {do_heartbeat} times in a row. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have."
+                    message=f"You have requested heartbeats {loops_since_overthink_warning} times in a row. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have."
                 ),
             )
             memory.push_message(system_message)
