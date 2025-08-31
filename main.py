@@ -26,7 +26,7 @@ agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
 )
 
 
-jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///db.sqlite")}
+jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///app/db.sqlite")}
 executors = {
     "default": ThreadPoolExecutor(20),
 }
