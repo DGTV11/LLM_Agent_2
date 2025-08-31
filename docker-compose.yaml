@@ -1,0 +1,23 @@
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    # ports:
+    #   - "8000:8000"
+    volumes:
+      - ./chroma:/chroma/chroma
+    environment:
+      IS_PERSISTENT: true
+      ANONYMIZED_TELEMETRY: false
+  llm-agent-2:
+    build: .
+    # develop:
+      # watch:
+        # - action: rebuild
+        #   path: ./pyproject.toml
+    volumes:
+      - .:/app:rw
+      # - /app/.venv
+      - ./.env:/app/.env
+      - ./db.sqlite:/app/db.sqlite
+    ports: 
+      - "5047:5047"

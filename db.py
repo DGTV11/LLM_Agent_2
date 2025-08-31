@@ -42,7 +42,8 @@ def sqlite_db_read_query(
 
 
 create_chromadb_client = lambda: chromadb.HttpClient(
-    host="localhost",
+    # host="localhost",
+    host="chroma",
     port=8000,
     settings=chromadb.config.Settings(anonymized_telemetry=False),
 )
