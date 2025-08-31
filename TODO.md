@@ -6,4 +6,6 @@
 
 3. [ ] Add file upload using ConceptCycle's impl (upload to Archival memory)
 
-4. [ ] Switch from sqlite to postgres (optional)
+4. [ ] Switch from sqlite to postgres
+
+5. [ ] Find a way to be able to set env variables in docker compose file
