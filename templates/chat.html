@@ -61,6 +61,8 @@
   <!-- <script src="js-yaml.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
   <script>
+    let ws;
+
     function scrollToBottom(container) {
       container.scrollTop = container.scrollHeight;
     }
@@ -80,7 +82,11 @@
       messageSendBtn.disabled = true;
       csStatusIndicator.className = "text-green-600 animate-pulse";
 
-      const ws = new WebSocket("{{ url_for('interact', agent_id=agent_id) }}");
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+
+      ws = new WebSocket("{{ url_for('interact', agent_id=agent_id) }}");
 
       ws.onmessage = function (event) {
         const atpm = JSON.parse(event.data);
@@ -208,6 +214,10 @@
     window.addEventListener("visibilitychange", function () {
       // console.log("Page is about to unload");
       if (document.visibilityState === "hidden") {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+
         navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
         navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
       }
