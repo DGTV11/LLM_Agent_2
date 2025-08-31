@@ -1,16 +1,21 @@
 import asyncio
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, DefaultDict, List, Literal, Optional
 
+from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Form, Request, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from pytz import utc
 from starlette.websockets import WebSocketState
 
 import agent
 import persona_gen
+from config import HEARTBEAT_FREQUENCY_IN_MINUTES
 from memory import Message, TextContent
 
 app = FastAPI()
@@ -18,6 +23,16 @@ templates = Jinja2Templates(directory="templates")
 
 agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
     lambda: asyncio.Semaphore(1)
+)
+
+
+jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///db.sqlite")}
+executors = {
+    "default": ThreadPoolExecutor(20),
+}
+job_defaults = {"coalesce": True, "max_instances": 3}
+scheduler = AsyncIOScheduler(
+    jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc
 )
 
 
@@ -74,6 +89,40 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
+async def heartbeat_query(agent_id: str):
+    try:
+        async with agent_semaphores[agent_id]:
+            memory = agent.get_memory_object(agent_id)
+            memory.push_message(
+                Message(
+                    message_type="system",
+                    timestamp=datetime.now(),
+                    content=TextContent(
+                        message="This is a timed heartbeat event. You should do some background tasks (if necessary) and reflect about your current conversational state and improvements you can make to yourself before going into standby mode."
+                    ),
+                )
+            )
+
+            gen = agent.call_agent(agent_id)
+            msg = next(gen)
+
+            while True:
+                try:
+                    msg = next(gen)
+                except StopIteration:
+                    break
+                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+    finally:
+        scheduler.add_job(
+            heartbeat_query,
+            "date",
+            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+            args=[agent_id],
+            id=agent_id,
+            replace_existing=True,
+        )
+
+
 @app.post("/api/agents/{agent_id}/send-message")
 async def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
     async with agent_semaphores[agent_id]:
@@ -92,6 +141,9 @@ async def interact(agent_id: str, websocket: WebSocket):
     await websocket.accept()
 
     try:
+        if scheduler.get_job(agent_id):
+            scheduler.remove_job(agent_id)
+
         async with agent_semaphores[agent_id]:
             gen = agent.call_agent(agent_id)
             queue = asyncio.Queue()
@@ -133,19 +185,41 @@ async def interact(agent_id: str, websocket: WebSocket):
         if websocket.application_state != WebSocketState.DISCONNECTED:
             await websocket.close()
 
+        scheduler.add_job(
+            heartbeat_query,
+            "date",
+            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+            args=[agent_id],
+            id=agent_id,
+            replace_existing=True,
+        )
+
 
 @app.post("/api/agents/{agent_id}/query")
 async def interact_no_stream(agent_id: str):
-    async with agent_semaphores[agent_id]:
-        gen = agent.call_agent(agent_id)
-        msg = next(gen)
+    if scheduler.get_job(agent_id):
+        scheduler.remove_job(agent_id)
 
-        while True:
-            try:
-                msg = next(gen)
-            except StopIteration:
-                break
-            await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+    try:
+        async with agent_semaphores[agent_id]:
+            gen = agent.call_agent(agent_id)
+            msg = next(gen)
+
+            while True:
+                try:
+                    msg = next(gen)
+                except StopIteration:
+                    break
+                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+    finally:
+        scheduler.add_job(
+            heartbeat_query,
+            "date",
+            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+            args=[agent_id],
+            id=agent_id,
+            replace_existing=True,
+        )
 
 
 # * Frontend
