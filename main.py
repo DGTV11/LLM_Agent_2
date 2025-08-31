@@ -238,7 +238,7 @@ def home_page(
 def create_agent_using_raw_agent_persona(
     agent_persona: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form([]),
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(default=[]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -253,7 +253,7 @@ def create_agent_using_raw_agent_persona(
 def create_agent_using_generated_agent_persona(
     agent_goals: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form([]),
+    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(default=[]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
