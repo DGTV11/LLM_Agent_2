@@ -1,10 +1,9 @@
-1. [ ] Implement optional functions
-- [ ] Web search (https://github.com/searxng/searxng)
+1. [x] Implement optional functions
+- [x] Web search (https://github.com/searxng/searxng)
 - [x] Python runner (https://github.com/vndee/llm-sandbox)
 
-2. [ ] Add file upload using ConceptCycle's impl (upload to Archival memory)
+2. Fix optional_function_sets selection during agent creation
 
-3. [ ] Switch from sqlite to postgres (optional)
+3. [ ] Add file upload using ConceptCycle's impl (upload to Archival memory)
 
-Remember:
-- Web search should spawn a different kind of agent (Research agent)
+4. [ ] Switch from sqlite to postgres (optional)
