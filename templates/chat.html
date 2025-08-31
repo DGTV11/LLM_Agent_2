@@ -211,23 +211,15 @@
       invokeWSLoop();
     });
 
-    window.addEventListener("visibilitychange", function () {
+    window.addEventListener("beforeunload", function () {
       // console.log("Page is about to unload");
-      if (document.visibilityState === "hidden") {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-
-        navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
-        navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
       }
-    });
 
-    // window.addEventListener("beforeunload", function () {
-    //   // console.log("Page is about to unload");
-    //   navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
-    //   navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
-    // });
+      navigator.sendBeacon("{{ url_for('send_message', agent_id=agent_id) }}", JSON.stringify({message_type: 'system', message: 'The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.'}));
+      navigator.sendBeacon("{{ url_for('interact_no_stream', agent_id=agent_id) }}");
+    });
 
     document.getElementById("messageText")
         .addEventListener("keyup", function(event) {
