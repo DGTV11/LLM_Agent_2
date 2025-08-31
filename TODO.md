@@ -12,7 +12,7 @@ from collections import defaultdict
 id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 per ID
 ```
 
-2. [ ] Create heartbeat system (bg daemon using https://apscheduler.readthedocs.io/en/3.x/)
+2. [x] Create heartbeat system (bg daemon using https://apscheduler.readthedocs.io/en/3.x/)
 
 3. [x] Create suitable frontend (FastAPI or Gradio)
 - modal with messages between leaving and joining back
@@ -24,7 +24,7 @@ id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 p
 - Web search (https://github.com/searxng/searxng)
 - Python runner (https://github.com/vndee/llm-sandbox)
 
-5. Add file upload using the ConceptCycle file upload system
+5. [ ] Add file upload using the ConceptCycle file upload system
 
 Remember:
 - Web search should spawn a different kind of agent (Research agent)
