@@ -26,5 +26,7 @@ id_semaphores = defaultdict(lambda: asyncio.Semaphore(1)) # Default limit of 1 p
 
 5. [ ] Add file upload using the ConceptCycle file upload system
 
+6. [ ] Switch from sqlite to postgres (optional)
+
 Remember:
 - Web search should spawn a different kind of agent (Research agent)
