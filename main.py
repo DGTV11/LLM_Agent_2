@@ -34,7 +34,6 @@ job_defaults = {"coalesce": True, "max_instances": 3}
 scheduler = AsyncIOScheduler(
     jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc
 )
-scheduler.start()
 
 
 # *Backend API
@@ -282,3 +281,16 @@ def chat_page(agent_id: str, request: Request):
         context={"agent_id": agent_id},
         # context={"optional_function_sets": agent.list_optional_function_sets()},
     )
+
+
+# * Scheduler start/stop
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    scheduler.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    scheduler.shutdown()
