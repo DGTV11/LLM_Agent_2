@@ -93,6 +93,7 @@
 
         switch (atpm.message_type) {
           case "debug":
+            console.log(atpm.payload);
             break;
           case "to_user":
             var message = document.createElement("li");
