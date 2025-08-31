@@ -4,6 +4,8 @@ ADD . /app
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y docker.io
+
 RUN uv sync --locked --compile-bytecode
 
 RUN chmod +x entrypoint.sh
