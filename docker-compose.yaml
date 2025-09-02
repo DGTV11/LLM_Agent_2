@@ -8,13 +8,6 @@ services:
     environment:
       IS_PERSISTENT: true
       ANONYMIZED_TELEMETRY: false
-  docker-proxy:
-    image: tecnativa/docker-socket-proxy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./docker-proxy-config.json:/etc/docker-socket-proxy/config.json:ro 
-      - ./haproxy/haproxy.cfg.template:/usr/local/etc/haproxy/haproxy.cfg.template:ro
-      - ./haproxy/server-state:/var/lib/haproxy/server-state
   llm-agent-2:
     build: .
     # develop:
@@ -26,5 +19,6 @@ services:
       - /app/.venv
       - ./.env:/app/.env
       - ./db.sqlite:/app/db.sqlite
+      - /var/run/docker.sock:/var/run/docker.sock
     ports: 
       - "5047:5047"

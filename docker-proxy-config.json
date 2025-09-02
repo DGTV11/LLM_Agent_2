@@ -1,4 +1,0 @@
-{
-  "POST": ["containers/create", "containers/start", "containers/attach"],
-  "GET": ["containers/json", "images/json", "version"]
-}

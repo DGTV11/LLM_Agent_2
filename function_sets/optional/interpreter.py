@@ -2,7 +2,7 @@ from datetime import datetime
 from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
-from llm_sandbox import SandboxSession
+from llm_sandbox import SandboxBackend, SandboxSession
 from pocketflow import *
 from pydantic import BaseModel, Field
 
@@ -30,7 +30,8 @@ class ExecutePython(FunctionNode):
         arguments_validated: ExecutePythonValidator,
     ) -> Message:
         with SandboxSession(
-            backend="docker", lang="python", docker_url="tcp://docker-proxy:2375"
+            backend=SandboxBackend.DOCKER,
+            lang="python",
         ) as session:
             result = session.run(arguments_validated.program)
 
@@ -38,8 +39,13 @@ class ExecutePython(FunctionNode):
                 message_type="function_res",
                 timestamp=datetime.now(),
                 content=FunctionResultContent(
-                    success=True,
-                    result=result.stdout,
+                    success=bool(result.exit_code),
+                    result="\n\n".join(
+                        [
+                            f"stdout: {result.stdout}",
+                            f"stderr: {result.stderr}",
+                        ]
+                    ),
                 ),
             )
 

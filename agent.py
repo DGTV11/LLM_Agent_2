@@ -28,6 +28,7 @@ from communication import (
     AgentToParentMessage,
     ATPM_Debug,
     ATPM_Error,
+    ATPM_KeepAlive,
     ATPM_Message,
     ATPM_ToUser,
 )
@@ -562,7 +563,10 @@ def call_agent(
                         yield msg
                         break
                 else:
-                    msg = None
+                    msg = AgentToParentMessage.model_validate(
+                        {"message_type": "keepalive"}
+                    ).root
+                    # msg = None
             except EOFError:
                 break
 

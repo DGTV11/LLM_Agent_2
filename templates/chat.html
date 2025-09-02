@@ -92,6 +92,8 @@
         const atpm = JSON.parse(event.data);
 
         switch (atpm.message_type) {
+          case "keepalive":
+            break;
           case "debug":
             console.log(atpm.payload);
             break;
