@@ -18,6 +18,8 @@ class PersonaAppendValidator(BaseModel):
     )
     text: str = Field(description="Text to be appended to the given section.")
 
+    model_config = {"title": "persona_append"}
+
 
 class PersonaAppend(FunctionNode):
     name = "persona_append"
@@ -54,6 +56,8 @@ class PersonaReplaceValidator(BaseModel):
     )
     old_text: str = Field(description="Old text in the given section.")
     new_text: str = Field(description="New text in the given section.")
+
+    model_config = {"title": "persona_replace"}
 
 
 class PersonaReplace(FunctionNode):
@@ -96,6 +100,8 @@ class PushTaskValidator(BaseModel):
 
     task: str = Field(description="Task to be pushed.")
 
+    model_config = {"title": "push_task"}
+
 
 class PushTask(FunctionNode):
     name = "push_task"
@@ -120,7 +126,7 @@ class PushTask(FunctionNode):
 class PopTaskValidator(BaseModel):
     """Pops task from your Working Context's task queue."""
 
-    pass
+    model_config = {"title": "pop_task"}
 
 
 class PopTask(FunctionNode):

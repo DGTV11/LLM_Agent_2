@@ -17,6 +17,8 @@ class SendMessageValidator(BaseModel):
 
     message: str = Field(description="Message to be sent.")
 
+    model_config = {"title": "send_message"}
+
 
 class SendMessage(FunctionNode):
     name = "send_message"

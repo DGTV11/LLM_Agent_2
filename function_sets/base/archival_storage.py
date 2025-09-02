@@ -21,6 +21,8 @@ class ArchivalInsertValidator(BaseModel):
         description="Category of information presented in the given text. Keep the number of categories low (so as not to make the categories too fine-grained) but not too low (to avoid overgeneralising the stored info)."
     )
 
+    model_config = {"title": "archival_insert"}
+
 
 class ArchivalInsert(FunctionNode):
     name = "archival_insert"
@@ -60,6 +62,8 @@ class ArchivalSearchValidator(BaseModel):
     category: Optional[str] = Field(
         description="Category of information to limit search to."
     )
+
+    model_config = {"title": "archival_search"}
 
 
 class ArchivalSearch(FunctionNode):

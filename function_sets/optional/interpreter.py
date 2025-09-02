@@ -16,6 +16,8 @@ class ExecutePythonValidator(BaseModel):
 
     program: str = Field(description="Python program to be run in the sandbox.")
 
+    model_config = {"title": "execute_python"}
+
 
 class ExecutePython(FunctionNode):
     name = "execute_python"

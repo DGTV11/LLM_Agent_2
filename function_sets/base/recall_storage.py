@@ -23,6 +23,8 @@ class RecallSearchValidator(BaseModel):
         description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
     )
 
+    model_config = {"title": "recall_search"}
+
 
 class RecallSearch(FunctionNode):
     name = "recall_search"
@@ -67,6 +69,8 @@ class RecallSearchByDateValidator(BaseModel):
         default=0,
         description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
     )
+
+    model_config = {"title": "recall_search_by_date"}
 
 
 class RecallSearchByDate(FunctionNode):

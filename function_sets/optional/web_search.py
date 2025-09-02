@@ -17,6 +17,8 @@ class DuckDuckGoInstantAnswerValidator(BaseModel):
 
     query: str = Field(description="Search query.")
 
+    model_config = {"title": "duckduckgo_instant_answer"}
+
 
 class DuckDuckGoInstantAnswer(FunctionNode):
     name = "duckduckgo_instant_answer"
@@ -61,6 +63,8 @@ class ScrapeWebpageValidator(BaseModel):
     """Scrapes the requested URL using BeautifulSoup."""
 
     url: str = Field(description="URL to be scraped from.")
+
+    model_config = {"title": "scrape_webpage"}
 
 
 class ScrapeWebpage(FunctionNode):
