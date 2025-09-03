@@ -21,7 +21,6 @@ from communication import (
     ATPM_Debug,
     ATPM_Error,
     ATPM_Halt,
-    ATPM_KeepAlive,
     ATPM_Message,
     ATPM_ToUser,
 )
@@ -163,7 +162,6 @@ async def interact(agent_id: str, websocket: WebSocket):
                     ATPM_Error,
                     ATPM_ToUser,
                     ATPM_Halt,
-                    ATPM_KeepAlive,
                 ]
             ] = asyncio.Queue()
 
