@@ -22,7 +22,13 @@
           class="w-full grid grid-cols-[1fr_4fr_1fr] gap-2 border-black border-2 p-2 rounded-2xl"
         >
           <form id="fileUploadForm" enctype="multipart/form-data">
-              <input type="file" name="file" id="fileInput" required />
+            <label
+              for="fileInput"
+              class="cursor-pointer px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-center"
+            >
+              Choose file
+            </label>
+            <input type="file" name="file" id="fileInput" class="hidden" required />
           </form>
           <input
             type="text"
@@ -113,7 +119,7 @@
           case "system":
             var message = document.createElement("li");
             var content = document.createTextNode(atpm.payload);
-            message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+            message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
 
             message.appendChild(content);
             messages.appendChild(message);
@@ -218,7 +224,7 @@
         const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
         window.history.replaceState({}, "", newUrl);
       } else {
-        entryMsg = "The user has re-entered the conversation. You should greet the user then carry on where you had left off.";
+        entryMsg = "The user has re-entered the conversation. You should greet the user then carry on where you have left off.";
       }
 
       sendMessageToAPI('system', entryMsg);
@@ -226,7 +232,7 @@
       const messages = document.getElementById("messages");
       var message = document.createElement("li");
       var content = document.createTextNode(entryMsg);
-      message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+      message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
       message.appendChild(content);
       messages.appendChild(message);
       scrollToBottom(messages);
@@ -276,7 +282,7 @@
         const messages = document.getElementById("messages");
         var message = document.createElement("li");
         var content = document.createTextNode(`File ${fileInput.files[0].name} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries.`);
-        message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+        message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
         message.appendChild(content);
         messages.appendChild(message);
         scrollToBottom(messages);
