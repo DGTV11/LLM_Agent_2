@@ -43,13 +43,13 @@ def process_file(
         case "pptx":
             slides = Presentation(BytesIO(file)).slides
 
-            slides_notes = ""
+            slides_text = ""
             for slide in slides:
                 for shape in slide.shapes:
                     if hasattr(shape, "text"):
-                        slides_notes += shape.text + "\n"
+                        slides_text += shape.text + "\n"
                     if hasattr(shape, "image"):
-                        slides_notes += (
+                        slides_text += (
                             "\n"
                             + "===IMAGE START==="
                             + vlm_process_image(
@@ -60,15 +60,15 @@ def process_file(
                             + "\n"
                         )
 
-            return slides_notes
+            return slides_text
         case "docx":
             doc = Document(BytesIO(file))
-            docx_notes = ""
+            docx_text = ""
 
             for para in doc.paragraphs:
                 for run in para.runs:
                     if run.text:
-                        docx_notes += run.text
+                        docx_text += run.text
 
                     drawing_elems = run._element.findall(
                         ".//w:drawing", namespaces=run._element.nsmap
@@ -89,7 +89,7 @@ def process_file(
                             b64_blob = base64.b64encode(blob).decode("utf-8")
                             content_type = image_part.content_type  # e.g. image/png
 
-                            docx_notes += (
+                            docx_text += (
                                 "\n===IMAGE START===\n"
                                 + vlm_process_image(
                                     b64_blob, content_type.replace("image/", "")
@@ -97,14 +97,14 @@ def process_file(
                                 + "\n===IMAGE END===\n"
                             )
 
-                docx_notes += "\n"
+                docx_text += "\n"
 
-            return docx_notes
+            return docx_text
         case "pdf":
             doc = fitz.open("pdf", file)
-            pdf_notes = ""
+            pdf_text = ""
             for page in doc:
-                pdf_notes += page.get_text("text") + "\n"
+                pdf_text += page.get_text("text") + "\n"
 
                 for img_index, img in enumerate(page.get_images(full=True)):
                     xref = img[0]
@@ -112,11 +112,11 @@ def process_file(
                     blob = base_image["image"]
                     b64_blob = base64.b64encode(blob).decode("utf-8")
                     ext = base_image["ext"]
-                    pdf_notes += (
+                    pdf_text += (
                         "\n===IMAGE START===\n"
                         + vlm_process_image(b64_blob, ext)
                         + "\n===IMAGE END===\n"
                     )
-            return pdf_notes
+            return pdf_text
         case _:
             raise ValueError("Invalid content_type")
