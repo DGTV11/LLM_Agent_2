@@ -1,8 +1,8 @@
-import json
 from datetime import datetime
 from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
+import orjson
 from pocketflow import *
 from pydantic import BaseModel, Field, NonNegativeInt
 
@@ -20,7 +20,7 @@ class RecallSearchValidator(BaseModel):
     )
     page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number or tweak query and try again.",
     )
 
     model_config = {"title": "recall_search"}
@@ -46,7 +46,10 @@ class RecallSearch(FunctionNode):
         ):
             message_dict = message.to_intermediate_repr()
 
-            result_str += "\n\n" + f"Result {res_no}: {json.dumps(message_dict)}"
+            result_str += (
+                "\n\n"
+                + f"Result {res_no}: {orjson.dumps(message_dict).decode('utf-8')}"
+            )
 
         return Message(
             message_type="function_res",
@@ -67,7 +70,7 @@ class RecallSearchByDateValidator(BaseModel):
     )
     page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number or tweak date range and try again.",
     )
 
     model_config = {"title": "recall_search_by_date"}
@@ -84,8 +87,7 @@ class RecallSearchByDate(FunctionNode):
         arguments_validated: RecallSearchByDateValidator,
     ) -> Message:
         messages = memory.recall_storage.date_search(
-            arguments_validated.start_timestamp.isoformat(),
-            arguments_validated.end_timestamp.isoformat(),
+            arguments_validated.start_timestamp, arguments_validated.end_timestamp
         )
 
         result_str = f"Results for page {arguments_validated.page}:"
@@ -96,7 +98,10 @@ class RecallSearchByDate(FunctionNode):
         ):
             message_dict = message.to_intermediate_repr()
 
-            result_str += "\n\n" + f"Result {res_no}: {json.dumps(message_dict)}"
+            result_str += (
+                "\n\n"
+                + f"Result {res_no}: {orjson.dumps(message_dict).decode('utf-8')}"
+            )
 
         return Message(
             message_type="function_res",

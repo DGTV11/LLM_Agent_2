@@ -1,5 +1,4 @@
 import importlib.util
-import json
 import os
 import sys
 from dataclasses import dataclass
@@ -34,12 +33,10 @@ class FunctionSets:
 
     @property
     def optional_function_set_names(self) -> List[str]:
-        return json.loads(
-            db.sqlite_db_read_query(
-                "SELECT optional_function_sets FROM agents WHERE id = ?;",
-                (self.agent_id,),
-            )[0][0]
-        )
+        return db.read(
+            "SELECT optional_function_sets FROM agents WHERE id = ?;",
+            (self.agent_id,),
+        )[0][0]
 
     # def get_function_nodes(self) -> Dict[str, "FunctionNode"]:
     def get_function_nodes(self) -> Dict[str, Any]:

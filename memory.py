@@ -1,13 +1,12 @@
-import json
-from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from os import path
-from typing import Any, Deque, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
 import yaml
 from pocketflow import Node
+from psycopg.types.json import Jsonb
 from pydantic import BaseModel
 from semantic_text_splitter import TextSplitter
 
@@ -165,8 +164,8 @@ class WorkingContext:
 
     @property
     def agent_persona(self) -> Union[str, Any]:
-        return db.sqlite_db_read_query(
-            "SELECT agent_persona FROM working_context WHERE agent_id = ?;",
+        return db.read(
+            "SELECT agent_persona FROM working_context WHERE agent_id = %s;",
             (self.agent_id,),
         )[0][0]
 
@@ -178,8 +177,8 @@ class WorkingContext:
                 f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
             )
 
-        db.sqlite_db_write_query(
-            "UPDATE working_context SET agent_persona = ? WHERE agent_id = ?;",
+        db.write(
+            "UPDATE working_context SET agent_persona = %s WHERE agent_id = %s;",
             (
                 value,
                 self.agent_id,
@@ -188,8 +187,8 @@ class WorkingContext:
 
     @property
     def user_persona(self) -> Union[str, Any]:
-        return db.sqlite_db_read_query(
-            "SELECT user_persona FROM working_context WHERE agent_id = ?;",
+        return db.read(
+            "SELECT user_persona FROM working_context WHERE agent_id = %s;",
             (self.agent_id,),
         )[0][0]
 
@@ -201,8 +200,8 @@ class WorkingContext:
                 f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
             )
 
-        db.sqlite_db_write_query(
-            "UPDATE working_context SET user_persona = ? WHERE agent_id = ?;",
+        db.write(
+            "UPDATE working_context SET user_persona = %s WHERE agent_id = %s;",
             (
                 value,
                 self.agent_id,
@@ -211,36 +210,27 @@ class WorkingContext:
 
     @property
     def tasks(self) -> Union[List[str], Any]:
-        return json.loads(
-            db.sqlite_db_read_query(
-                "SELECT tasks FROM working_context WHERE agent_id = ?;",
-                (self.agent_id,),
-            )[0][0]
-        )
+        return db.read(
+            "SELECT tasks FROM working_context WHERE agent_id = %s;",
+            (self.agent_id,),
+        )[0][0]
 
     def push_task(self, task: str) -> None:
-        db.sqlite_db_write_query(
-            "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
+        db.write(
+            "UPDATE working_context SET tasks = array_append(tasks, %s) WHERE agent_id = %s",
             (
-                json.dumps(self.tasks + [task]),
+                task,
                 self.agent_id,
             ),
         )
 
     def pop_task(self) -> str:
-        tasks = self.tasks
-
-        if len(tasks) == 0:
+        if len(self.tasks) == 0:
             raise ValueError("Task queue empty!")
 
-        task_queue = deque(tasks)
-        popped_task = str(task_queue.popleft())
-        db.sqlite_db_write_query(
-            "UPDATE working_context SET tasks = ? WHERE agent_id = ?",
-            (
-                json.dumps(list(task_queue)),
-                self.agent_id,
-            ),
+        popped_task = db.read(
+            "SELECT array_popleft_in_place('working_context', 'agent_id', %s, 'tasks')",
+            (self.agent_id,),
         )
 
         return popped_task
@@ -338,56 +328,56 @@ class RecallStorage:
     agent_id: str
 
     def __len__(self) -> int:
-        return len(
-            db.sqlite_db_read_query(
-                "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ?",
-                (self.agent_id,),
-            )
-        )
+        return db.read(
+            "SELECT COUNT(*) FROM recall_storage WHERE agent_id = %s",
+            (self.agent_id,),
+        )[0][0]
 
     def push_message(self, message: Message) -> None:
         message_intermediate = message.to_intermediate_repr()
 
-        db.sqlite_db_write_query(
+        db.write(
             """
             INSERT INTO recall_storage (id, agent_id, message_type, timestamp, content)
-            VALUES (?, ?, ?, ?, ?);
+            VALUES (%s, %s, %s, %s, %s);
             """,
             (
-                str(uuid4()),
+                uuid4(),
                 self.agent_id,
                 message_intermediate["message_type"],
                 message_intermediate["timestamp"],
-                json.dumps(message_intermediate["content"]),
+                Jsonb(message_intermediate["content"]),
             ),
         )
 
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
-        for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND content LIKE ?",
+        for message_type, timestamp, content in db.write(
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content ILIKE %s",
             (self.agent_id, f"%{query_text}%"),
         ):
             message_dict = {
                 "message_type": message_type,
                 "timestamp": timestamp,
-                "content": json.loads(content),
+                "content": content,
             }
 
             message_list.append(Message.from_intermediate_repr(message_dict))
 
         return message_list
 
-    def date_search(self, start_timestamp: str, end_timestamp: str) -> List[Message]:
+    def date_search(
+        self, start_timestamp: datetime, end_timestamp: datetime
+    ) -> List[Message]:
         message_list = []
-        for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = ? AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN ? AND ?",
+        for message_type, timestamp, content in db.write(
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s",
             (self.agent_id, start_timestamp, end_timestamp),
         ):
             message_dict = {
                 "message_type": message_type,
                 "timestamp": timestamp,
-                "content": json.loads(content),
+                "content": content,
             }
 
             message_list.append(Message.from_intermediate_repr(message_dict))
@@ -405,14 +395,14 @@ class FIFOQueue:
     @property
     def messages(self) -> List[Message]:
         message_list = []
-        for message_type, timestamp, content in db.sqlite_db_read_query(
-            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?",
+        for message_type, timestamp, content in db.read(
+            "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = %s",
             (self.agent_id,),
         ):
             message_dict = {
                 "message_type": message_type,
                 "timestamp": timestamp,
-                "content": json.loads(content),
+                "content": content,
             }
 
             message_list.append(Message.from_intermediate_repr(message_dict))
@@ -420,33 +410,31 @@ class FIFOQueue:
         return message_list
 
     def __len__(self) -> int:
-        return len(
-            db.sqlite_db_read_query(
-                "SELECT message_type, timestamp, content FROM fifo_queue WHERE agent_id = ?",
-                (self.agent_id,),
-            )
-        )
+        return db.read(
+            "SELECT COUNT(*) FROM fifo_queue WHERE agent_id = %s",
+            (self.agent_id,),
+        )[0][0]
 
     def push_message(self, message: Message) -> None:
         message_intermediate = message.to_intermediate_repr()
 
-        db.sqlite_db_write_query(
+        db.write(
             """
             INSERT INTO fifo_queue (id, agent_id, message_type, timestamp, content)
-            VALUES (?, ?, ?, ?, ?);
+            VALUES (%s, %s, %s, %s, %s);
             """,
             (
-                str(uuid4()),
+                uuid4(),
                 self.agent_id,
                 message_intermediate["message_type"],
                 message_intermediate["timestamp"],
-                json.dumps(message_intermediate["content"]),
+                Jsonb(message_intermediate["content"]),
             ),
         )
 
     def peek_message(self) -> Message:
-        db_res = db.sqlite_db_read_query(
-            "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = ?);",
+        db_res = db.read(
+            "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = %s AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = %s);",
             (self.agent_id, self.agent_id),
         )
         # print(db_res)
@@ -459,7 +447,7 @@ class FIFOQueue:
         message_dict = {
             "message_type": message_type,
             "timestamp": timestamp,
-            "content": json.loads(content),
+            "content": content,
         }
 
         return Message.from_intermediate_repr(message_dict)
@@ -467,9 +455,18 @@ class FIFOQueue:
     def pop_message(self) -> Message:
         last_message = self.peek_message()
 
-        db.sqlite_db_write_query(
-            "DELETE FROM fifo_queue WHERE agent_id = ? AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = ?);",
-            (self.agent_id, self.agent_id),
+        db.write(
+            """
+DELETE FROM fifo_queue
+WHERE id = (
+    SELECT id
+    FROM fifo_queue
+    WHERE agent_id = %s
+    ORDER BY timestamp ASC
+    LIMIT 1
+)
+""",
+            (self.agent_id,),
         )
 
         return last_message
@@ -545,8 +542,8 @@ class Memory:
 
     @property
     def recursive_summary_and_summary_timestamp(self) -> Tuple[str, datetime]:
-        rs, rsut_txt = db.sqlite_db_read_query(
-            "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE id = ?;",
+        rs, rsut_txt = db.read(
+            "SELECT recursive_summary, recursive_summary_update_time FROM agents WHERE id = %s;",
             (self.agent_id,),
         )[0]
 
@@ -647,11 +644,11 @@ class Memory:
 
         new_summary = shared["summary"]
 
-        db.sqlite_db_write_query(
-            "UPDATE agents SET recursive_summary = ?, recursive_summary_update_time = ? WHERE id = ?",
+        db.write(
+            "UPDATE agents SET recursive_summary = %s, recursive_summary_update_time = %s WHERE id = %s",
             (
                 new_summary,
-                datetime.now().isoformat(),
+                datetime.now(),
                 self.agent_id,
             ),
         )

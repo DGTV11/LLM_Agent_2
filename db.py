@@ -3,13 +3,15 @@ from sqlite3 import Error
 from typing import Any, List, Optional, Tuple, Union
 
 import chromadb
+import orjson
 import psycopg
+from psycopg.types.json import set_json_dumps, set_json_loads
 
 from config import POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER
 
 
 # *Helper functions
-def db_write_query(
+def write(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> Union[int, float, str, bytes, None]:  # values can be tuple
     with psycopg.connect(
@@ -21,10 +23,9 @@ def db_write_query(
             else:
                 cur.execute(query)
             conn.commit()
-            return cur.lastrowid
 
 
-def db_read_query(
+def read(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> List[Tuple[Any, ...]]:  # values can be tuple
     with psycopg.connect(
@@ -45,34 +46,34 @@ create_chromadb_client = lambda: chromadb.HttpClient(
     settings=chromadb.config.Settings(anonymized_telemetry=False),
 )
 
+# *Init DB
 
-# *Init SQLite DB
+set_json_dumps(lambda obj, *, default: orjson.dumps(obj).decode("utf-8"))
+set_json_loads(orjson.loads)
 
 ## *Agents
-sqlite_db_write_query(
+write(
     """
     CREATE TABLE IF NOT EXISTS agents (
-        id TEXT PRIMARY KEY NOT NULL,
-        -- json list
-        optional_function_sets TEXT NOT NULL, 
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        id UUID PRIMARY KEY NOT NULL,
+        optional_function_sets TEXT[] NOT NULL, 
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         recursive_summary TEXT DEFAULT "No content in recursive summary yet",
-        recursive_summary_update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        recursive_summary_update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     """,
 )
 
 ## *Working Context
 
-sqlite_db_write_query(
+write(
     """
     CREATE TABLE IF NOT EXISTS working_context (
-        id TEXT PRIMARY KEY NOT NULL,
-        agent_id TEXT NOT NULL,
+        id UUID PRIMARY KEY NOT NULL,
+        agent_id UUID NOT NULL,
         agent_persona TEXT NOT NULL,
         user_persona TEXT NOT NULL,
-        -- json list
-        tasks TEXT NOT NULL, 
+        tasks TEXT[] NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
@@ -80,15 +81,14 @@ sqlite_db_write_query(
 
 ## *Recall Storage
 
-sqlite_db_write_query(
+write(
     """
     CREATE TABLE IF NOT EXISTS recall_storage (
-        id TEXT PRIMARY KEY NOT NULL,
-        agent_id TEXT NOT NULL,
+        id UUID PRIMARY KEY NOT NULL,
+        agent_id UUID NOT NULL,
         message_type TEXT NOT NULL,
-        timestamp DATETIME NOT NULL,
-        -- json obj
-        content TEXT NOT NULL, 
+        timestamp TIMESTAMP NOT NULL,
+        content JSONB NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
@@ -96,16 +96,89 @@ sqlite_db_write_query(
 
 ## *FIFO Queue
 
-sqlite_db_write_query(
+write(
     """
     CREATE TABLE IF NOT EXISTS fifo_queue (
-        id TEXT PRIMARY KEY NOT NULL,
-        agent_id TEXT NOT NULL,
+        id UUID PRIMARY KEY NOT NULL,
+        agent_id UUID NOT NULL,
         message_type TEXT NOT NULL,
-        timestamp DATETIME NOT NULL,
-        -- json obj
-        content TEXT NOT NULL, 
+        timestamp TIMESTAMP NOT NULL,
+        content JSONB NOT NULL, 
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
+)
+
+## *DB helper functions
+
+write(
+    """
+CREATE OR REPLACE FUNCTION array_pop_in_place(
+    tbl regclass,          -- table name
+    keycol text,           -- primary key column name
+    keyval anyelement,     -- primary key value
+    arrcol text            -- array column name
+)
+RETURNS anyelement
+LANGUAGE plpgsql AS $$
+DECLARE
+    last_elem anyelement;
+    new_arr   anyarray;
+    sql       text;
+BEGIN
+    -- Get the last element + shortened array
+    sql := format(
+        'SELECT %1$I[array_length(%1$I,1)], %1$I[1:array_length(%1$I,1)-1]
+         FROM %2$s WHERE %3$I = $1',
+        arrcol, tbl, keycol
+    );
+    EXECUTE sql INTO last_elem, new_arr USING keyval;
+
+    -- Update the row with the shortened array
+    sql := format(
+        'UPDATE %1$s SET %2$I = $1 WHERE %3$I = $2',
+        tbl, arrcol, keycol
+    );
+    EXECUTE sql USING new_arr, keyval;
+
+    RETURN last_elem;
+END;
+$$;
+    """
+)
+
+write(
+    """
+CREATE OR REPLACE FUNCTION array_popleft_in_place(
+    tbl regclass,          -- table name
+    keycol text,           -- primary key column
+    keyval anyelement,     -- primary key value
+    arrcol text            -- array column
+)
+RETURNS anyelement
+LANGUAGE plpgsql AS $$
+DECLARE
+    first_elem anyelement;
+    new_arr    anyarray;
+    sql        text;
+BEGIN
+    -- Get first element and remainder
+    sql := format(
+        'SELECT %1$I[1], %1$I[2:array_length(%1$I,1)]
+         FROM %2$s WHERE %3$I = $1',
+        arrcol, tbl, keycol
+    );
+    EXECUTE sql INTO first_elem, new_arr USING keyval;
+
+    -- Update with remainder
+    sql := format(
+        'UPDATE %1$s SET %2$I = $1 WHERE %3$I = $2',
+        tbl, arrcol, keycol
+    );
+    EXECUTE sql USING new_arr, keyval;
+
+    RETURN first_elem;
+END;
+$$;
+    """
 )

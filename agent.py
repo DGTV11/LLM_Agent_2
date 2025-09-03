@@ -1,4 +1,3 @@
-import json
 import os
 import signal
 import traceback
@@ -19,6 +18,7 @@ from typing import (
 )
 from uuid import uuid4
 
+import orjson
 import yaml
 from pocketflow import Flow, Node
 from pydantic import BaseModel, ValidationError, conint
@@ -418,31 +418,31 @@ def get_agent_flow(memory: Memory):
 def create_new_agent(
     optional_function_sets: List[str], agent_persona: str, user_persona: Optional[str]
 ) -> str:
-    agent_id = str(uuid4())
+    agent_id = uuid4()
 
-    db.sqlite_db_write_query(
+    db.write(
         """
         INSERT INTO agents (id, optional_function_sets)
-        VALUES (?, ?);
+        VALUES (%s, %s);
         """,
         (
             agent_id,
-            json.dumps(optional_function_sets),
+            optional_function_sets,
         ),
     )
 
-    db.sqlite_db_write_query(
+    db.write(
         """
         INSERT INTO working_context (id, agent_id, agent_persona, user_persona, tasks)
-        VALUES (?, ?, ?, ?, ?);
+        VALUES (%s, %s, %s, %s, %s);
         """,
         (
-            str(uuid4()),
+            uuid4(),
             agent_id,
             agent_persona,
             user_persona
             or "This is what I know about the user. I should update this persona as our conversation progresses",
-            json.dumps([]),
+            [],
         ),
     )
 
@@ -452,34 +452,30 @@ def create_new_agent(
 
 
 def list_agents() -> List[Tuple[str, datetime]]:
-    return db.sqlite_db_read_query("SELECT id, created_at FROM agents;")
+    return db.read("SELECT id, created_at FROM agents;")
 
 
 def get_agent_info(agent_id: str) -> Tuple[str, str, List[str], datetime]:
-    optional_function_sets_json, created_at = db.sqlite_db_read_query(
-        "SELECT optional_function_sets, created_at FROM agents WHERE id = ?;",
+    optional_function_sets_json, created_at = db.read(
+        "SELECT optional_function_sets, created_at FROM agents WHERE id = %s;",
         (agent_id,),
     )[0]
 
     return (
-        *db.sqlite_db_read_query(
-            "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = ?;",
+        *db.read(
+            "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = %s;",
             (agent_id,),
         )[0],
-        json.loads(optional_function_sets_json),
-        datetime.fromisoformat(created_at),
+        optional_function_sets_json,
+        created_at,
     )
 
 
 def delete_agent(agent_id: str) -> None:
-    db.sqlite_db_write_query("DELETE FROM agents WHERE id = ?;", (agent_id,))
-    db.sqlite_db_write_query(
-        "DELETE FROM working_context WHERE agent_id = ?;", (agent_id,)
-    )
-    db.sqlite_db_write_query(
-        "DELETE FROM recall_storage WHERE agent_id = ?;", (agent_id,)
-    )
-    db.sqlite_db_write_query("DELETE FROM fifo_queue WHERE agent_id = ?;", (agent_id,))
+    db.write("DELETE FROM agents WHERE id = %s;", (agent_id,))
+    db.write("DELETE FROM working_context WHERE agent_id = %s;", (agent_id,))
+    db.write("DELETE FROM recall_storage WHERE agent_id = %s;", (agent_id,))
+    db.write("DELETE FROM fifo_queue WHERE agent_id = %s;", (agent_id,))
 
     db.create_chromadb_client().delete_collection(agent_id)
 
@@ -560,7 +556,7 @@ def call_agent(
             try:
                 if parent_conn.poll(0.25):
                     msg = AgentToParentMessage.model_validate(
-                        json.loads(parent_conn.recv())
+                        orjson.loads(parent_conn.recv())
                     ).root
                     if msg.message_type == "halt":
                         yield msg
