@@ -28,6 +28,7 @@ from communication import (
     AgentToParentMessage,
     ATPM_Debug,
     ATPM_Error,
+    ATPM_Halt,
     ATPM_KeepAlive,
     ATPM_Message,
     ATPM_ToUser,
@@ -544,7 +545,9 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
 def call_agent(
     agent_id: str,
 ) -> Generator[
-    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, None], str, None
+    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, ATPM_KeepAlive],
+    str,
+    None,
 ]:
     parent_conn, child_conn = Pipe()
     p = Process(target=call_agent_worker, args=(agent_id, child_conn))

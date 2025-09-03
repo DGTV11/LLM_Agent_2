@@ -1,7 +1,7 @@
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Annotated, DefaultDict, List, Literal, Optional
+from typing import Annotated, DefaultDict, List, Literal, Optional, Union
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -15,6 +15,14 @@ from starlette.websockets import WebSocketState
 
 import agent
 import persona_gen
+from communication import (
+    ATPM_Debug,
+    ATPM_Error,
+    ATPM_Halt,
+    ATPM_KeepAlive,
+    ATPM_Message,
+    ATPM_ToUser,
+)
 from config import HEARTBEAT_FREQUENCY_IN_MINUTES
 from memory import Message, TextContent
 
@@ -146,7 +154,16 @@ async def interact(agent_id: str, websocket: WebSocket):
 
         async with agent_semaphores[agent_id]:
             gen = agent.call_agent(agent_id)
-            queue = asyncio.Queue()
+            queue: asyncio.Queue[
+                Union[
+                    ATPM_Message,
+                    ATPM_Debug,
+                    ATPM_Error,
+                    ATPM_ToUser,
+                    ATPM_Halt,
+                    ATPM_KeepAlive,
+                ]
+            ] = asyncio.Queue()
 
             # Prime the generator
             first_msg = next(gen)
@@ -238,7 +255,7 @@ def home_page(
 def create_agent_using_raw_agent_persona(
     agent_persona: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(default=[]),
+    optional_function_sets: Annotated[List[str], Form] = Form(default=[]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
@@ -253,7 +270,7 @@ def create_agent_using_raw_agent_persona(
 def create_agent_using_generated_agent_persona(
     agent_goals: Annotated[str, Form()],
     user_persona: Annotated[Optional[str], Form()],
-    optional_function_sets: Annotated[Optional[List[str]], Form] = Form(default=[]),
+    optional_function_sets: Annotated[List[str], Form] = Form(default=[]),
 ):
     agent_id = agent.create_new_agent(
         optional_function_sets,
