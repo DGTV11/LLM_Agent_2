@@ -27,10 +27,6 @@ class ATPM_Halt(BaseModel):
     message_type: Literal["halt"]
 
 
-class ATPM_KeepAlive(BaseModel):
-    message_type: Literal["keepalive"]
-
-
 class AgentToParentMessage(RootModel):
     root: (
         ATPM_Message
@@ -38,5 +34,4 @@ class AgentToParentMessage(RootModel):
         | ATPM_Error
         | ATPM_ToUser
         | ATPM_Halt
-        | ATPM_KeepAlive
     ) = Field(discriminator="message_type")
