@@ -1,44 +1,41 @@
-import sqlite3
 from os import path
 from sqlite3 import Error
 from typing import Any, List, Optional, Tuple, Union
 
 import chromadb
+import psycopg
+
+from config import POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER
 
 
 # *Helper functions
-def sqlite_db_write_query(
+def db_write_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> Union[int, float, str, bytes, None]:  # values can be tuple
-    conn = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
-    cursor = conn.cursor()
-    if values:
-        cursor.execute(query, values)
-    else:
-        cursor.execute(query)
-    conn.commit()
-    conn.close()
-
-    # print(f"Successfully ran write query {query} with values {values}")
-
-    return cursor.lastrowid
+    with psycopg.connect(
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432"
+    ) as conn:
+        with conn.cursor() as cur:
+            if values:
+                cur.execute(query, values)
+            else:
+                cur.execute(query)
+            conn.commit()
+            return cur.lastrowid
 
 
-def sqlite_db_read_query(
+def db_read_query(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> List[Tuple[Any, ...]]:  # values can be tuple
-    conn = sqlite3.connect(path.join(path.dirname(__file__), "db.sqlite"))
-    cursor = conn.cursor()
-    if values:
-        cursor.execute(query, values)
-    else:
-        cursor.execute(query)
-    results = cursor.fetchall()
-    conn.close()
-
-    # print(f"Successfully ran read query {query} with values {values}")
-
-    return results
+    with psycopg.connect(
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432"
+    ) as conn:
+        with conn.cursor() as cur:
+            if values:
+                cur.execute(query, values)
+            else:
+                cur.execute(query)
+            return cur.fetchall()
 
 
 create_chromadb_client = lambda: chromadb.HttpClient(

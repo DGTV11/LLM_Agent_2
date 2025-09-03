@@ -1,13 +1,21 @@
 services:
   chroma:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:1.0.20
     # ports:
     #   - "8000:8000"
     volumes:
-      - ./chroma:/chroma/chroma
+      - chromadb:/chroma/chroma
     environment:
       IS_PERSISTENT: true
       ANONYMIZED_TELEMETRY: false
+  postgres:
+    image: postgres:alpine3.22
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
   llm-agent-2:
     build: .
     # develop:
@@ -18,7 +26,6 @@ services:
       - .:/app:rw
       - /app/.venv
       - ./.env:/app/.env
-      - ./db.sqlite:/app/db.sqlite
       - /var/run/docker.sock:/var/run/docker.sock
     ports: 
       - "5047:5047"
