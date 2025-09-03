@@ -1,42 +1,44 @@
-from dotenv import dotenv_values
+from os import getenv
 
-CONFIG = dotenv_values(".env")
+from dotenv import load_dotenv
 
-LLM_API_BASE_URL = str(CONFIG["LLM_API_BASE_URL"])
-LLM_API_KEY = str(CONFIG["LLM_API_KEY"])
-LLM_MODELS = str(CONFIG["LLM_MODELS"]).split(",")
+load_dotenv()
 
-VLM_API_BASE_URL = str(CONFIG["VLM_API_BASE_URL"])
-VLM_API_KEY = str(CONFIG["VLM_API_KEY"])
-VLM_MODELS = str(CONFIG["VLM_MODELS"]).split(",")
+LLM_API_BASE_URL = str(getenv("LLM_API_BASE_URL"))
+LLM_API_KEY = str(getenv("LLM_API_KEY"))
+LLM_MODELS = str(getenv("LLM_MODELS")).split(",")
 
-HF_TOKEN = str(CONFIG["HF_TOKEN"])
-HF_LLM_NAME = str(CONFIG["HF_LLM_NAME"])
+VLM_API_BASE_URL = str(getenv("VLM_API_BASE_URL"))
+VLM_API_KEY = str(getenv("VLM_API_KEY"))
+VLM_MODELS = str(getenv("VLM_MODELS")).split(",")
+
+HF_TOKEN = str(getenv("HF_TOKEN"))
+HF_LLM_NAME = str(getenv("HF_LLM_NAME"))
 
 DEBUG_MODE = (
-    True if (CONFIG.get("DEBUG_MODE") or "false").strip().lower() == "true" else False
+    True if (getenv("DEBUG_MODE") or "false").strip().lower() == "true" else False
 )
 
-CTX_WINDOW = int(CONFIG.get("CTX_WINDOW") or "8192")
+CTX_WINDOW = int(getenv("CTX_WINDOW") or "8192")
 
-CHUNK_MAX_TOKENS = int(CONFIG.get("CHUNK_MAX_TOKENS") or "128")
+CHUNK_MAX_TOKENS = int(getenv("CHUNK_MAX_TOKENS") or "128")
 
-WARNING_TOK_FRAC = float(CONFIG.get("WARNING_TOK_FRAC") or "0.8")
-FLUSH_TOK_FRAC = float(CONFIG.get("FLUSH_TOK_FRAC") or "0.95")
-FLUSH_TGT_TOK_FRAC = float(CONFIG.get("FLUSH_TGT_TOK_FRAC") or "0.6")
-FLUSH_MIN_FIFO_QUEUE_LEN = int(CONFIG.get("FLUSH_MIN_FIFO_QUEUE_LEN") or "5")
+WARNING_TOK_FRAC = float(getenv("WARNING_TOK_FRAC") or "0.8")
+FLUSH_TOK_FRAC = float(getenv("FLUSH_TOK_FRAC") or "0.95")
+FLUSH_TGT_TOK_FRAC = float(getenv("FLUSH_TGT_TOK_FRAC") or "0.6")
+FLUSH_MIN_FIFO_QUEUE_LEN = int(getenv("FLUSH_MIN_FIFO_QUEUE_LEN") or "5")
 
 OVERTHINK_WARNING_HEARTBEAT_COUNT = int(
-    CONFIG.get("OVERTHINK_WARNING_HEARTBEAT_COUNT") or "10"
+    getenv("OVERTHINK_WARNING_HEARTBEAT_COUNT") or "10"
 )
 
-PAGE_SIZE = int(CONFIG.get("PAGE_SIZE") or "10")
-PERSONA_MAX_WORDS = int(CONFIG.get("PERSONA_MAX_WORDS") or "100")
+PAGE_SIZE = int(getenv("PAGE_SIZE") or "10")
+PERSONA_MAX_WORDS = int(getenv("PERSONA_MAX_WORDS") or "100")
 
 HEARTBEAT_FREQUENCY_IN_MINUTES = int(
-    CONFIG.get("HEARTBEAT_FREQUENCY_IN_MINUTES") or "60"
+    getenv("HEARTBEAT_FREQUENCY_IN_MINUTES") or "60"
 )
 
-POSTGRES_USER = str(CONFIG["POSTGRES_USER"])
-POSTGRES_PASSWORD = str(CONFIG["POSTGRES_PASSWORD"])
-POSTGRES_DB = str(CONFIG["POSTGRES_DB"])
+POSTGRES_USER = str(getenv("POSTGRES_USER"))
+POSTGRES_PASSWORD = str(getenv("POSTGRES_PASSWORD"))
+POSTGRES_DB = str(getenv("POSTGRES_DB"))
