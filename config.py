@@ -1,9 +1,5 @@
 from os import getenv
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 LLM_API_BASE_URL = str(getenv("LLM_API_BASE_URL"))
 LLM_API_KEY = str(getenv("LLM_API_KEY"))
 LLM_MODELS = str(getenv("LLM_MODELS")).split(",")
