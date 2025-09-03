@@ -11,7 +11,3 @@ wheels/
 
 # Env variables
 .env
-
-# Private stuff
-db.sqlite
-chroma
