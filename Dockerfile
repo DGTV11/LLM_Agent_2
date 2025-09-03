@@ -4,7 +4,7 @@ ADD . /app
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y docker.io
+RUN apt-get update && apt-get install -y docker.io libmagic1
 
 RUN uv sync --locked --compile-bytecode
 
