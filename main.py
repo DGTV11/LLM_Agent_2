@@ -3,10 +3,11 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Annotated, DefaultDict, List, Literal, Optional, Union
 
+import magic
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI, Form, Request, WebSocket, status
+from fastapi import FastAPI, Form, Request, UploadFile, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -14,6 +15,7 @@ from pytz import utc
 from starlette.websockets import WebSocketState
 
 import agent
+import doc_upload
 import persona_gen
 from communication import (
     ATPM_Debug,
@@ -236,6 +238,31 @@ async def interact_no_stream(agent_id: str):
             args=[agent_id],
             id=agent_id,
             replace_existing=True,
+        )
+
+
+@app.post("/api/agents/{agent_id}/upload")
+async def upload(
+    agent_id: str,
+    file: UploadFile,
+):
+    async with agent_semaphores[agent_id]:
+        memory = agent.get_memory_object(agent_id)
+
+        file_bytes = await file.read()
+        content_type = magic.from_buffer(file_bytes, mime=True)
+
+        processed_file_text = doc_upload.process_file(file_bytes, content_type)
+        memory.archival_storage.archival_insert(processed_file_text, file.filename)
+
+        memory.push_message(
+            Message(
+                message_type="system",
+                timestamp=datetime.now(),
+                content=TextContent(
+                    message=f"File {file.filename} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries."
+                ),
+            )
         )
 
 

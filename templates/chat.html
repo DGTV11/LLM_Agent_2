@@ -19,8 +19,11 @@
         <h2 class="font-bold text-4xl pb-4">Conversation</h2>
         <ul id="messages" class='flex flex-1 overflow-auto flex-col gap-2 max-h-full [&>li]:text-wrap [&>li]:p-2 [&>li]:border-2 [&>li]:rounded-2xl'></ul> 
         <div
-          class="w-full grid grid-cols-[3fr_1fr] gap-2 border-black border-2 p-2 rounded-2xl"
+          class="w-full grid grid-cols-[1fr_4fr_1fr] gap-2 border-black border-2 p-2 rounded-2xl"
         >
+          <form id="fileUploadForm" enctype="multipart/form-data">
+              <input type="file" name="file" id="fileInput" required />
+          </form>
           <input
             type="text"
             id="messageText"
@@ -107,6 +110,14 @@
             messages.appendChild(message);
             scrollToBottom(messages);
             break;
+          case "system":
+            var message = document.createElement("li");
+            var content = document.createTextNode(atpm.payload);
+            message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+
+            message.appendChild(content);
+            messages.appendChild(message);
+            scrollToBottom(messages);
           default:
             const cs_atpm = document.createElement("li");
             const cs_content = document.createTextNode(jsyaml.dump(atpm));
@@ -211,6 +222,15 @@
       }
 
       sendMessageToAPI('system', entryMsg);
+
+      const messages = document.getElementById("messages");
+      var message = document.createElement("li");
+      var content = document.createTextNode(entryMsg);
+      message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+      message.appendChild(content);
+      messages.appendChild(message);
+      scrollToBottom(messages);
+
       invokeWSLoop();
     });
 
@@ -230,6 +250,42 @@
         if (event.key === "Enter") {
             document.getElementById("messageSendBtn").click();
         }
+    });
+
+    const fileInput = document.getElementById('fileInput');
+
+    fileInput.addEventListener('change', async () => {
+      if (!fileInput.files.length) return;
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const response = await fetch("{{ url_for('upload', agent_id=agent_id) }}", {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+        }
+
+        const result = await response.text();
+        console.log('Upload success:', result);
+
+        const messages = document.getElementById("messages");
+        var message = document.createElement("li");
+        var content = document.createTextNode(`File ${fileInput.files[0].name} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries.`);
+        message.className = "self-center text-center text-sm text-gray-600 max-w-[70%]";
+        message.appendChild(content);
+        messages.appendChild(message);
+        scrollToBottom(messages);
+      } catch (err) {
+        console.error(err);
+        alert('File upload failed.');
+      } finally {
+        fileInput.value = ''; // reset input
+      }
     });
   </script>
 </html>
