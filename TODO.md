@@ -8,8 +8,6 @@
 
 3. [x] migrate to orjson
 
-4. [ ] test
+4. [ ] test and merge
 
 5. [ ] make websocket single connection per session to reduce chance for errors
-
-6. [ ] Find a way to be able to set env variables in docker compose file
