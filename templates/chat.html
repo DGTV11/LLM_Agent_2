@@ -107,6 +107,10 @@
             console.log(atpm.payload);
             break;
           case "to_user":
+            if (atpm.payload.trim().length === 0) {
+              break;
+            }
+
             var message = document.createElement("li");
             var content = document.createTextNode(atpm.payload);
             // message.className = "self-end bg-blue-100 border-blue-600 text-right max-w-[70%]";
@@ -117,6 +121,10 @@
             scrollToBottom(messages);
             break;
           case "system":
+            if (atpm.payload.trim().length === 0) {
+              break;
+            }
+
             var message = document.createElement("li");
             var content = document.createTextNode(atpm.payload);
             message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
