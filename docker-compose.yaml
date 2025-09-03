@@ -23,12 +23,13 @@ services:
         # - action: rebuild
         #   path: ./pyproject.toml
     volumes:
-      - .:/app:rw
+      - .:/app
       - /app/.venv
-      - ./.env:/app/.env
       - /var/run/docker.sock:/var/run/docker.sock
     ports: 
       - "5047:5047"
+    env_file:
+      - .env
 volumes:
   chromadb:
   postgres_data:
