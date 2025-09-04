@@ -17,13 +17,7 @@ from starlette.websockets import WebSocketState
 import agent
 import doc_upload
 import persona_gen
-from communication import (
-    ATPM_Debug,
-    ATPM_Error,
-    ATPM_Halt,
-    ATPM_Message,
-    ATPM_ToUser,
-)
+from communication import ATPM_Debug, ATPM_Error, ATPM_Halt, ATPM_Message, ATPM_ToUser
 from config import HEARTBEAT_FREQUENCY_IN_MINUTES
 from memory import Message, TextContent
 
@@ -157,11 +151,7 @@ async def interact(agent_id: str, websocket: WebSocket):
             gen = agent.call_agent(agent_id)
             queue: asyncio.Queue[
                 Union[
-                    ATPM_Message,
-                    ATPM_Debug,
-                    ATPM_Error,
-                    ATPM_ToUser,
-                    ATPM_Halt,
+                    ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, None
                 ]
             ] = asyncio.Queue()
 

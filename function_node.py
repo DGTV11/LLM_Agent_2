@@ -70,8 +70,8 @@ class FunctionNode(Node, metaclass=FunctionNodeMeta):
         memory.push_message(exec_res)
 
         conn.send(
-            AgentToParentMessage(
-                message_type="message", payload=exec_res.to_intermediate_repr()
+            AgentToParentMessage.model_validate(
+                {"message_type": "message", "payload": exec_res.to_intermediate_repr()}
             ).model_dump_json()
         )
 

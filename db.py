@@ -11,9 +11,7 @@ from config import POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER
 
 
 # *Helper functions
-def write(
-    query: str, values: Optional[Tuple[Any, ...]] = None
-) -> Union[int, float, str, bytes, None]:  # values can be tuple
+def write(query: str, values: Optional[Tuple[Any, ...]] = None) -> None:
     with psycopg.connect(
         f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432"
     ) as conn:
@@ -48,7 +46,12 @@ create_chromadb_client = lambda: chromadb.HttpClient(
 
 # *Init DB
 
-set_json_dumps(lambda obj, *, default: orjson.dumps(obj).decode("utf-8"))
+
+def orjson_dumps_str(*args) -> str:
+    return orjson.dumps(*args).decode("utf-8")
+
+
+set_json_dumps(orjson_dumps_str)
 set_json_loads(orjson.loads)
 
 ## *Agents

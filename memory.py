@@ -231,7 +231,7 @@ class WorkingContext:
         popped_task = db.read(
             "SELECT array_popleft_in_place('working_context', 'agent_id', %s, 'tasks')",
             (self.agent_id,),
-        )
+        )[0][0]
 
         return popped_task
 
@@ -352,7 +352,7 @@ class RecallStorage:
 
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
-        for message_type, timestamp, content in db.write(
+        for message_type, timestamp, content in db.read(
             "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content ILIKE %s",
             (self.agent_id, f"%{query_text}%"),
         ):
@@ -370,7 +370,7 @@ class RecallStorage:
         self, start_timestamp: datetime, end_timestamp: datetime
     ) -> List[Message]:
         message_list = []
-        for message_type, timestamp, content in db.write(
+        for message_type, timestamp, content in db.read(
             "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s",
             (self.agent_id, start_timestamp, end_timestamp),
         ):

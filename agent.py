@@ -77,8 +77,8 @@ class CallAgent(Node):
         assert isinstance(conn, Connection)
 
         conn.send(
-            AgentToParentMessage(
-                message_type="debug", payload="Calling agent"
+            AgentToParentMessage.model_validate(
+                {"message_type": "debug", "payload": "Calling agent"}
             ).model_dump_json()
         )
 
@@ -90,8 +90,8 @@ class CallAgent(Node):
         resp = call_llm(memory.main_ctx)
 
         conn.send(
-            AgentToParentMessage(
-                message_type="debug", payload=f"Got respose: {resp}"
+            AgentToParentMessage.model_validate(
+                {"message_type": "debug", "payload": f"Got respose: {resp}"}
             ).model_dump_json()
         )
 
@@ -126,8 +126,8 @@ class CallAgent(Node):
         memory.push_message(agent_message_obj)
 
         conn.send(
-            AgentToParentMessage(
-                message_type="message", payload=agent_message_dict
+            AgentToParentMessage.model_validate(
+                {"message_type": "message", "payload": agent_message_dict}
             ).model_dump_json()
         )
 
@@ -166,8 +166,11 @@ class InvalidFunction(Node):
 
         memory.push_message(error_message)
         conn.send(
-            AgentToParentMessage(
-                message_type="message", payload=error_message.to_intermediate_repr()
+            AgentToParentMessage.model_validate(
+                {
+                    "message_type": "message",
+                    "payload": error_message.to_intermediate_repr(),
+                }
             ).model_dump_json()
         )
 
@@ -217,9 +220,11 @@ class ExitOrContinue(Node):
         memory_in_ctx_no_tokens = memory.in_ctx_no_tokens
 
         conn.send(
-            AgentToParentMessage(
-                message_type="debug",
-                payload=f"Context window contains {memory_in_ctx_no_tokens}/{CTX_WINDOW} ({memory_in_ctx_no_tokens/CTX_WINDOW:.0%}) tokens",
+            AgentToParentMessage.model_validate(
+                {
+                    "message_type": "debug",
+                    "payload": f"Context window contains {memory_in_ctx_no_tokens}/{CTX_WINDOW} ({memory_in_ctx_no_tokens/CTX_WINDOW:.0%}) tokens",
+                }
             ).model_dump_json()
         )
 
@@ -236,9 +241,11 @@ class ExitOrContinue(Node):
             memory.push_message(system_message)
 
             conn.send(
-                AgentToParentMessage(
-                    message_type="message",
-                    payload=system_message.to_intermediate_repr(),
+                AgentToParentMessage.model_validate(
+                    {
+                        "message_type": "message",
+                        "payload": system_message.to_intermediate_repr(),
+                    },
                 ).model_dump_json()
             )
 
@@ -260,9 +267,11 @@ class ExitOrContinue(Node):
             memory.push_message(system_message)
 
             conn.send(
-                AgentToParentMessage(
-                    message_type="message",
-                    payload=system_message.to_intermediate_repr(),
+                AgentToParentMessage.model_validate(
+                    {
+                        "message_type": "message",
+                        "payload": system_message.to_intermediate_repr(),
+                    }
                 ).model_dump_json()
             )
 
@@ -284,9 +293,11 @@ class ExitOrContinue(Node):
                     memory.push_message(system_message)
 
                     conn.send(
-                        AgentToParentMessage(
-                            message_type="message",
-                            payload=system_message.to_intermediate_repr(),
+                        AgentToParentMessage.model_validate(
+                            {
+                                "message_type": "message",
+                                "payload": system_message.to_intermediate_repr(),
+                            }
                         ).model_dump_json()
                     )
 
@@ -302,9 +313,11 @@ class ExitOrContinue(Node):
                     memory.push_message(system_message)
 
                     conn.send(
-                        AgentToParentMessage(
-                            message_type="message",
-                            payload=system_message.to_intermediate_repr(),
+                        AgentToParentMessage.model_validate(
+                            {
+                                "message_type": "message",
+                                "payload": system_message.to_intermediate_repr(),
+                            }
                         ).model_dump_json()
                     )
 
@@ -326,9 +339,11 @@ class ExitOrContinue(Node):
             memory.push_message(system_message)
 
             conn.send(
-                AgentToParentMessage(
-                    message_type="message",
-                    payload=system_message.to_intermediate_repr(),
+                AgentToParentMessage.model_validate(
+                    {
+                        "message_type": "message",
+                        "payload": system_message.to_intermediate_repr(),
+                    }
                 ).model_dump_json()
             )
 
@@ -445,7 +460,7 @@ def create_new_agent(
         ),
     )
 
-    db.create_chromadb_client().create_collection(agent_id)
+    db.create_chromadb_client().create_collection(str(agent_id))
 
     return agent_id
 
@@ -496,15 +511,15 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         conn.send(
-            AgentToParentMessage(
-                message_type="debug", payload="Loading agent memory..."
+            AgentToParentMessage.model_validate(
+                {"message_type": "debug", "payload": "Loading agent memory..."}
             ).model_dump_json()
         )
         memory = get_memory_object(agent_id)
 
         conn.send(
-            AgentToParentMessage(
-                message_type="debug", payload="Loading agent flow..."
+            AgentToParentMessage.model_validate(
+                {"message_type": "debug", "payload": "Loading agent flow..."}
             ).model_dump_json()
         )
         agent_flow = get_agent_flow(memory)
@@ -517,21 +532,25 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
         }
 
         conn.send(
-            AgentToParentMessage(
-                message_type="debug", payload="Starting agent loop..."
+            AgentToParentMessage.model_validate(
+                {"message_type": "debug", "payload": "Starting agent loop..."}
             ).model_dump_json()
         )
 
         agent_flow.run(shared)
     except Exception:
         conn.send(
-            AgentToParentMessage(
-                message_type="error", payload=traceback.format_exc()
+            AgentToParentMessage.model_validate(
+                {"message_type": "error", "payload": traceback.format_exc()}
             ).model_dump_json()
         )
     finally:
         try:
-            conn.send(AgentToParentMessage(message_type="halt").model_dump_json())
+            conn.send(
+                AgentToParentMessage.model_validate(
+                    {"message_type": "halt"}
+                ).model_dump_json()
+            )
         except Exception:
             pass
         conn.close()
@@ -540,7 +559,7 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
 def call_agent(
     agent_id: str,
 ) -> Generator[
-    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt],
+    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, None],
     str,
     None,
 ]:

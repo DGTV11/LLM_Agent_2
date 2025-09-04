@@ -28,10 +28,6 @@ class ATPM_Halt(BaseModel):
 
 
 class AgentToParentMessage(RootModel):
-    root: (
-        ATPM_Message
-        | ATPM_Debug
-        | ATPM_Error
-        | ATPM_ToUser
-        | ATPM_Halt
-    ) = Field(discriminator="message_type")
+    root: ATPM_Message | ATPM_Debug | ATPM_Error | ATPM_ToUser | ATPM_Halt = Field(
+        discriminator="message_type"
+    )
