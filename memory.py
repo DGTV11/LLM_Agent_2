@@ -363,7 +363,7 @@ class RecallStorage:
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.read(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content ILIKE %s",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content::text ILIKE %s",
             (self.agent_id, f"%{query_text}%"),
         ):
             message_dict = {
