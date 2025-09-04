@@ -135,8 +135,8 @@
           messages.appendChild(message);
           scrollToBottom(messages);
         default:
-          const cs_atpm = document.createElement("li");
-          const cs_content = document.createTextNode(jsyaml.dump(atpm));
+          var cs_atpm = document.createElement("li");
+          var cs_content = document.createTextNode(jsyaml.dump(atpm));
           // cs_content.appendChild(jsyaml.safeDump(atpm));
           cs_atpm.appendChild(cs_content);
           consciousness_stream.appendChild(cs_atpm);
