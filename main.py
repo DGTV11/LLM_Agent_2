@@ -1,9 +1,13 @@
 import asyncio
+import tempfile
+import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Annotated, DefaultDict, List, Literal, Optional, Union
 
 import magic
+import orjson
+from apscheduler import JobLookupError
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -132,132 +136,174 @@ async def heartbeat_query(agent_id: str):
         )
 
 
-@app.post("/api/agents/{agent_id}/send-message")
-async def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
-    async with agent_semaphores[agent_id]:
-        memory = agent.get_memory_object(agent_id)
-        memory.push_message(
-            Message(
-                message_type=user_or_system_message.message_type,
-                timestamp=datetime.now(),
-                content=TextContent(message=user_or_system_message.message),
-            )
+def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
+    memory = agent.get_memory_object(agent_id)
+    memory.push_message(
+        Message(
+            message_type=user_or_system_message.message_type,
+            timestamp=datetime.now(),
+            content=TextContent(message=user_or_system_message.message),
         )
+    )
 
 
-@app.websocket("/api/agents/{agent_id}/interact")
-async def interact(agent_id: str, websocket: WebSocket):
+@app.websocket("/api/agents/{agent_id}/chat")
+async def chat(agent_id: str, websocket: WebSocket):
     await websocket.accept()
 
-    try:
-        if scheduler.get_job(agent_id):
-            scheduler.remove_job(agent_id)
+    async with agent_semaphores[agent_id]:
+        try:
+            if scheduler.get_job(agent_id):  # *Remove scheduled heartbeat query
+                scheduler.remove_job(agent_id)
 
-        async with agent_semaphores[agent_id]:
-            gen = agent.call_agent(agent_id)
-            queue: asyncio.Queue[
-                Union[
-                    ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, None
-                ]
-            ] = asyncio.Queue()
+            # *Init queues
+            user_or_system_message_queue: asyncio.Queue[UserOrSystemMessage] = (
+                asyncio.Queue()
+            )
+            command_queue: asyncio.Queue[str] = asyncio.Queue()
 
-            # Prime the generator
-            first_msg = next(gen)
-            await queue.put(first_msg)
+            # *Init async receiver
+            async def receive():
+                current_filename: str = None
+                current_tempfile: tempfile.TemporaryFile = None
 
-            async def receive_commands():
                 while True:
                     try:
-                        data = await websocket.receive_json()
-                        command = data.get("command")
-                        if command:
-                            new_msg = gen.send(command)
-                            await queue.put(new_msg)
+                        received_data = await websocket.receive()
+
+                        if "text" in received_data:
+                            json_data = orjson.loads(received_data["text"])
+
+                            if user_message_dict := json_data.get("user_message"):
+                                await user_or_system_message_queue.put(
+                                    UserOrSystemMessage.model_validate(
+                                        user_message_dict
+                                    )
+                                )
+
+                            if command := json_data.get("command"):
+                                await command_queue.put(command)
+
+                            if file_command := json_data.get("file_command"):
+                                match file_command:
+                                    case "start":
+                                        assert (
+                                            not current_filename
+                                        ), "Existing file upload in progress"
+                                        assert json_data.get(
+                                            "filename"
+                                        ), "Filename must not be empty"
+                                        current_filename = json_data.get("filename")
+                                        current_tempfile = tempfile.TemporaryFile(
+                                            mode="ab+", delete=True
+                                        )
+                                    case "end":
+                                        assert (
+                                            current_filename
+                                        ), "No file upload in progress"
+
+                                        memory = agent.get_memory_object(agent_id)
+
+                                        current_tempfile.seek(0)
+                                        file_bytes = current_tempfile.read()
+
+                                        content_type = magic.from_buffer(
+                                            file_bytes, mime=True
+                                        )
+                                        processed_file_text = doc_upload.process_file(
+                                            file_bytes, content_type
+                                        )
+                                        memory.archival_storage.archival_insert(
+                                            processed_file_text, current_filename
+                                        )
+                                        await user_or_system_message_queue.put(
+                                            UserOrSystemMessage(
+                                                message_type="system",
+                                                message=(
+                                                    f"File {current_filename} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries."
+                                                ),
+                                            )
+                                        )
+
+                                        current_filename = None
+                                        current_tempfile.close()
+                        elif "bytes" in received_data:
+                            assert current_filename, "No file upload in progress"
+                            current_tempfile.write(received_data["bytes"])
                     except Exception:
+                        await websocket.send_text(
+                            AgentToParentMessage.model_validate(
+                                {
+                                    "message_type": "error",
+                                    "payload": traceback.format_exc(),
+                                }
+                            ).model_dump_json()
+                        )
+
+            receive_task = asyncio.create_task(receive())
+
+            firstInteraction = orjson.loads(await websocket.receive_text())[
+                "firstInteraction"
+            ]
+            await user_or_system_message_queue.put(
+                UserOrSystemMessage(
+                    message_type="system",
+                    message=(
+                        "A new user has entered the conversation. You should greet the user then get to know him."
+                        if firstInteraction
+                        else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
+                    ),
+                )
+            )
+
+            while True:  # *Chat loop
+                user_or_system_message = await user_or_system_message_queue.get()
+
+                send_message(agent_id, user_or_system_message)
+
+                while True:  # *Single agent heartbeat loop
+                    agent_gen = agent.call_agent(agent_id)
+                    try:
+                        if command_queue.empty():
+                            atpm = next(agent_gen)
+                        else:
+                            atpm = agent_gen.send(await command_queue.get())
+
+                        if atpm:
+                            await websocket.send_text(atpm.model_dump_json())
+                    except StopIteration:
                         break
 
-            receive_task = asyncio.create_task(receive_commands())
+                command_queue = asyncio.Queue()
+        except Exception as e:
+            print(f"WebSocket error for {agent_id}: {e}")
+        finally:
+            receive_task.cancel()
+            if (
+                websocket.application_state != WebSocketState.DISCONNECTED
+            ):  # *Conversation exit event
+                await websocket.close()
 
-            try:
-                while True:
-                    msg = await queue.get()
-                    if msg:
-                        await websocket.send_json(msg.model_dump())
+                send_message(
+                    agent_id,
+                    UserOrSystemMessage(
+                        message_type="system",
+                        message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
+                    ),
+                )
 
-                    try:
-                        new_msg = next(gen)
-                        await queue.put(new_msg)
-                    except StopIteration:
-                        if queue.empty():
-                            break
-            finally:
-                receive_task.cancel()
-    except Exception as e:
-        print(f"WebSocket error for {agent_id}: {e}")
-    finally:
-        if websocket.application_state != WebSocketState.DISCONNECTED:
-            await websocket.close()
+                for _ in agent.call_agent(agent_id):
+                    await asyncio.sleep(0.05)
 
-        scheduler.add_job(
-            heartbeat_query,
-            "date",
-            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
-            args=[agent_id],
-            id=agent_id,
-            replace_existing=True,
-        )
-
-
-@app.post("/api/agents/{agent_id}/query")
-async def interact_no_stream(agent_id: str):
-    if scheduler.get_job(agent_id):
-        scheduler.remove_job(agent_id)
-
-    try:
-        async with agent_semaphores[agent_id]:
-            gen = agent.call_agent(agent_id)
-            msg = next(gen)
-
-            while True:
-                try:
-                    msg = next(gen)
-                except StopIteration:
-                    break
-                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
-    finally:
-        scheduler.add_job(
-            heartbeat_query,
-            "date",
-            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
-            args=[agent_id],
-            id=agent_id,
-            replace_existing=True,
-        )
-
-
-@app.post("/api/agents/{agent_id}/upload")
-async def upload(
-    agent_id: str,
-    file: UploadFile,
-):
-    async with agent_semaphores[agent_id]:
-        memory = agent.get_memory_object(agent_id)
-
-        file_bytes = await file.read()
-        content_type = magic.from_buffer(file_bytes, mime=True)
-
-        processed_file_text = doc_upload.process_file(file_bytes, content_type)
-        memory.archival_storage.archival_insert(processed_file_text, file.filename)
-
-        memory.push_message(
-            Message(
-                message_type="system",
-                timestamp=datetime.now(),
-                content=TextContent(
-                    message=f"File {file.filename} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries."
-                ),
-            )
-        )
+            scheduler.add_job(
+                heartbeat_query,
+                "date",
+                run_date=datetime.now()
+                + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+                args=[agent_id],
+                id=agent_id,
+                replace_existing=True,
+            )  # *Add new scheduled heartbeat query
 
 
 # * Frontend
