@@ -59,7 +59,7 @@ def extract_docx_cell_content(cell, doc):
                         textified_image = vlm_process_image(
                             b64_blob, content_type.replace("image/", "")
                         )
-                    except:
+                    except Exception:
                         textified_image = "IMAGE FAILED"
 
                     chunks.append(
@@ -87,7 +87,7 @@ def extract_pptx_cell_content(cell):
                     base64.b64encode(shape.image.blob).decode("utf-8"),
                     shape.image.content_type.replace("image/", ""),
                 )
-            except:
+            except Exception:
                 textified_image = "IMAGE FAILED"
             chunks.append(
                 "\n".join(["===IMAGE START===", textified_image, "===IMAGE END==="])
@@ -153,7 +153,7 @@ def process_file(file: bytes, content_type: str):
                             base64.b64encode(shape.image.blob).decode("utf-8"),
                             shape.image.content_type.replace("image/", ""),
                         )
-                    except:
+                    except Exception:
                         textified_image = "IMAGE FAILED"
                     chunks.append(
                         "\n".join(
@@ -202,7 +202,7 @@ def process_file(file: bytes, content_type: str):
                                 textified_image = vlm_process_image(
                                     b64_blob, content_type_img.replace("image/", "")
                                 )
-                            except:
+                            except Exception:
                                 textified_image = "IMAGE FAILED"
 
                             chunk.append(
@@ -243,7 +243,7 @@ def process_file(file: bytes, content_type: str):
 
                 try:
                     textified_image = vlm_process_image(b64_blob, ext)
-                except:
+                except Exception:
                     textified_image = "IMAGE FAILED"
 
                 chunks.append(
@@ -255,5 +255,5 @@ def process_file(file: bytes, content_type: str):
     # Fallback
     try:
         return file.decode("utf-8")
-    except:
+    except Exception:
         raise ValueError("Invalid content_type")
