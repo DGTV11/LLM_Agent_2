@@ -462,7 +462,7 @@ def create_new_agent(
 
     db.create_chromadb_client().create_collection(str(agent_id))
 
-    return agent_id
+    return str(agent_id)
 
 
 def list_agents() -> List[Tuple[str, datetime]]:
