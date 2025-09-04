@@ -71,6 +71,12 @@ async def delete_agent(agent_id: str):
     async with agent_semaphores[agent_id]:
         agent.delete_agent(agent_id)
 
+        try:
+            scheduler.remove_job(agent_id)
+        except JobLookupError:
+            pass
+            # print("Heartbeat job not found, nothing to remove.")
+
 
 class AgentDefinition(BaseModel):
     optional_function_sets: List[str]
