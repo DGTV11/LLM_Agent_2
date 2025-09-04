@@ -88,6 +88,17 @@
       messageSendBtn.disabled = false;
     }
 
+    ws.onopen = function () {
+      const params = new URLSearchParams(window.location.search);
+      const firstInteraction = Boolean(params.get("fi"));
+
+      setSendingState();
+
+      ws.send(JSON.stringify({
+        first_interaction: firstInteraction
+      }));
+    };
+
     ws.onmessage = function (event) {
       const atpm = JSON.parse(event.data);
 
@@ -210,16 +221,5 @@
       // Optional: clear input after processing all files
       fileInput.value = "";
     });
-
-    ws.onopen = () => {
-      const params = new URLSearchParams(window.location.search);
-      const firstInteraction = Boolean(params.get("fi"));
-
-      setSendingState();
-
-      ws.send(JSON.stringify({
-        first_interaction: firstInteraction
-      }));
-    };
     </script>
 </html>

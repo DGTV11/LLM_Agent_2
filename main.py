@@ -243,19 +243,23 @@ async def chat(agent_id: str, websocket: WebSocket):
                             assert current_filename, "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
                     except Exception:
-                        await websocket.send_text(
-                            AgentToParentMessage.model_validate(
-                                {
-                                    "message_type": "error",
-                                    "payload": traceback.format_exc(),
-                                }
-                            ).model_dump_json()
-                        )
+                        if websocket.application_state == WebSocketState.CONNECTED:
+                            await websocket.send_text(
+                                AgentToParentMessage.model_validate(
+                                    {
+                                        "message_type": "error",
+                                        "payload": traceback.format_exc(),
+                                    }
+                                ).model_dump_json()
+                            )
 
             receive_task = asyncio.create_task(receive())
 
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
+
+                while not command_queue.empty():
+                    _ = command_queue.get_nowait()
 
                 send_message(agent_id, user_or_system_message)
 
@@ -271,8 +275,6 @@ async def chat(agent_id: str, websocket: WebSocket):
                             await websocket.send_text(atpm.model_dump_json())
                     except StopIteration:
                         break
-
-                command_queue = asyncio.Queue()
         except Exception as e:
             print(f"WebSocket error for {agent_id}: {e}")
         finally:
