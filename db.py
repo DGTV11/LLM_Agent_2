@@ -13,7 +13,7 @@ from config import POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER
 # *Helper functions
 def write(query: str, values: Optional[Tuple[Any, ...]] = None) -> None:
     with psycopg.connect(
-        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432"
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
     ) as conn:
         with conn.cursor() as cur:
             if values:
@@ -27,7 +27,7 @@ def read(
     query: str, values: Optional[Tuple[Any, ...]] = None
 ) -> List[Tuple[Any, ...]]:  # values can be tuple
     with psycopg.connect(
-        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432"
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
     ) as conn:
         with conn.cursor() as cur:
             if values:
