@@ -229,7 +229,17 @@ class WorkingContext:
             raise ValueError("Task queue empty!")
 
         popped_task = db.read(
-            "SELECT array_popleft_in_place('working_context', 'agent_id', %s, 'tasks')",
+            """
+WITH popped AS (
+    SELECT tasks[1] AS task_to_return
+    FROM working_context
+    WHERE agent_id = %s
+)
+UPDATE working_context
+SET tasks = tasks[2:array_length(tasks,1)]
+WHERE agent_id = %s
+RETURNING (SELECT task_to_return FROM popped);
+    """,
             (self.agent_id,),
         )[0][0]
 
@@ -358,7 +368,7 @@ class RecallStorage:
         ):
             message_dict = {
                 "message_type": message_type,
-                "timestamp": timestamp,
+                "timestamp": timestamp.isoformat(),
                 "content": content,
             }
 
@@ -376,7 +386,7 @@ class RecallStorage:
         ):
             message_dict = {
                 "message_type": message_type,
-                "timestamp": timestamp,
+                "timestamp": timestamp.isoformat(),
                 "content": content,
             }
 
@@ -401,7 +411,7 @@ class FIFOQueue:
         ):
             message_dict = {
                 "message_type": message_type,
-                "timestamp": timestamp,
+                "timestamp": timestamp.isoformat(),
                 "content": content,
             }
 
@@ -446,7 +456,7 @@ class FIFOQueue:
 
         message_dict = {
             "message_type": message_type,
-            "timestamp": timestamp,
+            "timestamp": timestamp.isoformat(),
             "content": content,
         }
 
@@ -547,7 +557,7 @@ class Memory:
             (self.agent_id,),
         )[0]
 
-        return rs, datetime.fromisoformat(rsut_txt)
+        return rs, rsut_txt
 
     @property
     def main_ctx(self) -> List[Dict[str, str]]:

@@ -18,7 +18,7 @@ import agent
 import doc_upload
 import persona_gen
 from communication import ATPM_Debug, ATPM_Error, ATPM_Halt, ATPM_Message, ATPM_ToUser
-from config import HEARTBEAT_FREQUENCY_IN_MINUTES
+from config import HEARTBEAT_FREQUENCY_IN_MINUTES, POSTGRES_SQLACADEMY_URL
 from memory import Message, TextContent
 
 app = FastAPI()
@@ -29,7 +29,7 @@ agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
 )
 
 
-jobstores = {"default": SQLAlchemyJobStore(url="sqlite:////app/db.sqlite")}
+jobstores = {"default": SQLAlchemyJobStore(url=POSTGRES_SQLACADEMY_URL)}
 executors = {
     "default": ThreadPoolExecutor(20),
 }

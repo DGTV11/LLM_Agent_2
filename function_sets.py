@@ -34,7 +34,7 @@ class FunctionSets:
     @property
     def optional_function_set_names(self) -> List[str]:
         return db.read(
-            "SELECT optional_function_sets FROM agents WHERE id = ?;",
+            "SELECT optional_function_sets FROM agents WHERE id = %s;",
             (self.agent_id,),
         )[0][0]
 
