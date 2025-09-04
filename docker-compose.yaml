@@ -23,8 +23,8 @@ services:
         # - action: rebuild
         #   path: ./pyproject.toml
     volumes:
-      - .:/app
-      - /app/.venv
+      # - .:/app
+      # - /app/.venv
       - /var/run/docker.sock:/var/run/docker.sock
     ports: 
       - "5047:5047"
