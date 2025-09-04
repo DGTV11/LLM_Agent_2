@@ -174,6 +174,18 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if "text" in received_data:
                             json_data = orjson.loads(received_data["text"])
 
+                            if first_interaction := json_data.get("first_interaction"):
+                                await user_or_system_message_queue.put(
+                                    UserOrSystemMessage(
+                                        message_type="system",
+                                        message=(
+                                            "A new user has entered the conversation. You should greet the user then get to know him."
+                                            if first_interaction
+                                            else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
+                                        ),
+                                    )
+                                )
+
                             if user_message_dict := json_data.get("user_message"):
                                 await user_or_system_message_queue.put(
                                     UserOrSystemMessage.model_validate(
@@ -239,21 +251,6 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 }
                             ).model_dump_json()
                         )
-
-            firstInteraction = orjson.loads(await websocket.receive_text())[
-                "firstInteraction"
-            ]
-
-            await user_or_system_message_queue.put(
-                UserOrSystemMessage(
-                    message_type="system",
-                    message=(
-                        "A new user has entered the conversation. You should greet the user then get to know him."
-                        if firstInteraction
-                        else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
-                    ),
-                )
-            )
 
             receive_task = asyncio.create_task(receive())
 
