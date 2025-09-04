@@ -2,7 +2,7 @@ import os
 import signal
 import traceback
 from datetime import datetime
-from multiprocessing import Pipe, Process
+from multiprocessing import Pipe, Process, set_start_method
 from multiprocessing.connection import Connection
 from time import sleep
 from typing import (
@@ -53,6 +53,8 @@ from memory import (
     WorkingContext,
 )
 from persona_gen import generate_persona
+
+set_start_method("fork", force=True)
 
 
 # *CallAgent node
