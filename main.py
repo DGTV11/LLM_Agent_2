@@ -7,8 +7,8 @@ from typing import Annotated, DefaultDict, List, Literal, Optional, Union
 
 import magic
 import orjson
-from apscheduler import JobLookupError
 from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Form, Request, UploadFile, WebSocket, status
