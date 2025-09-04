@@ -240,11 +240,10 @@ async def chat(agent_id: str, websocket: WebSocket):
                             ).model_dump_json()
                         )
 
-            receive_task = asyncio.create_task(receive())
-
             firstInteraction = orjson.loads(await websocket.receive_text())[
                 "firstInteraction"
             ]
+
             await user_or_system_message_queue.put(
                 UserOrSystemMessage(
                     message_type="system",
@@ -255,6 +254,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                     ),
                 )
             )
+
+            receive_task = asyncio.create_task(receive())
 
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
