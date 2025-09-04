@@ -171,8 +171,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                     try:
                         received_data = await websocket.receive()
 
-                        if "text" in received_data:
-                            print("Received text frame", flush=True)
+                        if isinstance(received_data, str):
+                            # print("Received text frame", flush=True)
 
                             json_data = orjson.loads(received_data["text"])
 
@@ -241,8 +241,8 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                                         current_filename = None
                                         current_tempfile.close()
-                        elif "bytes" in received_data:
-                            print("Received bytes frame", flush=True)
+                        elif isinstance(received_data, bytes):
+                            # print("Received bytes frame", flush=True)
 
                             assert current_filename, "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
@@ -273,7 +273,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                             received_command = await command_queue.get()
                             atpm = agent_gen.send(received_command)
 
-                        print("Got atpm", flush=True)
+                        # print("Got atpm", flush=True)
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
                     except StopIteration:
