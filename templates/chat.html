@@ -88,57 +88,55 @@
       messageSendBtn.disabled = false;
     }
 
-    function invokeWSLoop() {
-      ws.onmessage = function (event) {
-        const atpm = JSON.parse(event.data);
+    ws.onmessage = function (event) {
+      const atpm = JSON.parse(event.data);
 
-        switch (atpm.message_type) {
-          case "keepalive":
+      switch (atpm.message_type) {
+        case "keepalive":
+          break;
+        case "debug":
+          console.log(atpm.payload);
+          break;
+        case "to_user":
+          if (atpm.payload.trim().length === 0) {
             break;
-          case "debug":
-            console.log(atpm.payload);
+          }
+
+          var message = document.createElement("li");
+          var content = document.createTextNode(atpm.payload);
+          // message.className = "self-end bg-blue-100 border-blue-600 text-right max-w-[70%]";
+          message.className = "self-end bg-blue-100 border-blue-600 text-left max-w-[70%]";
+
+          message.appendChild(content);
+          messages.appendChild(message);
+          scrollToBottom(messages);
+          break;
+        case "system":
+          if (atpm.payload.trim().length === 0) {
             break;
-          case "to_user":
-            if (atpm.payload.trim().length === 0) {
-              break;
-            }
+          }
 
-            var message = document.createElement("li");
-            var content = document.createTextNode(atpm.payload);
-            // message.className = "self-end bg-blue-100 border-blue-600 text-right max-w-[70%]";
-            message.className = "self-end bg-blue-100 border-blue-600 text-left max-w-[70%]";
+          var message = document.createElement("li");
+          var content = document.createTextNode(atpm.payload);
+          message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
 
-            message.appendChild(content);
-            messages.appendChild(message);
-            scrollToBottom(messages);
-            break;
-          case "system":
-            if (atpm.payload.trim().length === 0) {
-              break;
-            }
+          message.appendChild(content);
+          messages.appendChild(message);
+          scrollToBottom(messages);
+        default:
+          const cs_atpm = document.createElement("li");
+          const cs_content = document.createTextNode(jsyaml.dump(atpm));
+          // cs_content.appendChild(jsyaml.safeDump(atpm));
+          cs_atpm.appendChild(cs_content);
+          consciousness_stream.appendChild(cs_atpm);
+          scrollToBottom(consciousness_stream);
+      }
+    };
 
-            var message = document.createElement("li");
-            var content = document.createTextNode(atpm.payload);
-            message.className = "self-center text-center text-sm text-gray-600 max-w-[70%] border-none";
-
-            message.appendChild(content);
-            messages.appendChild(message);
-            scrollToBottom(messages);
-          default:
-            const cs_atpm = document.createElement("li");
-            const cs_content = document.createTextNode(jsyaml.dump(atpm));
-            // cs_content.appendChild(jsyaml.safeDump(atpm));
-            cs_atpm.appendChild(cs_content);
-            consciousness_stream.appendChild(cs_atpm);
-            scrollToBottom(consciousness_stream);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        setIdleState();
-      };
-    }
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+      setIdleState();
+    };
 
     function sendMessage() { 
       const input = document.getElementById("messageText");
@@ -188,38 +186,36 @@
 
       for (const file of fileInput.files) {
         // Tell server a new file is starting
-        websocket.send(JSON.stringify({
+        ws.send(JSON.stringify({
           file_command: "start",
           filename: file.name,
         }));
 
-        const chunkSize = 16 * 1024; // 16 KB chunks
+        const chunkSize = 64 * 1024; // 64 KB chunks
         let offset = 0;
 
         while (offset < file.size) {
           const chunk = file.slice(offset, offset + chunkSize);
           const arrayBuffer = await chunk.arrayBuffer();
-          websocket.send(arrayBuffer);
+          ws.send(arrayBuffer);
           offset += chunkSize;
         }
 
         // Tell server file is done
-        websocket.send(JSON.stringify({ file_command: "end" }));
+        ws.send(JSON.stringify({ file_command: "end" }));
       }
 
       // Optional: clear input after processing all files
       fileInput.value = "";
     });
 
-    window.addEventListener("load", function () {
-      // console.log("Page fully loaded");
+    ws.onopen = () => {
       const params = new URLSearchParams(window.location.search);
       const firstInteraction = Boolean(params.get("fi"));
 
       ws.send(JSON.stringify({
         first_interaction: firstInteraction
       }));
-    });
-
+    };
     </script>
 </html>
