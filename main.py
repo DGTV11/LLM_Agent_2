@@ -172,7 +172,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                         received_data = await websocket.receive()
 
                         if "text" in received_data:
-                            print("Received text frame")
+                            print("Received text frame", flush=True)
 
                             json_data = orjson.loads(received_data["text"])
 
@@ -242,7 +242,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                                         current_filename = None
                                         current_tempfile.close()
                         elif "bytes" in received_data:
-                            print("Received bytes frame")
+                            print("Received bytes frame", flush=True)
 
                             assert current_filename, "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
@@ -262,9 +262,6 @@ async def chat(agent_id: str, websocket: WebSocket):
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
 
-                while not command_queue.empty():
-                    _ = command_queue.get_nowait()
-
                 send_message(agent_id, user_or_system_message)
 
                 while True:  # *Single agent heartbeat loop
@@ -273,13 +270,17 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if command_queue.empty():
                             atpm = next(agent_gen)
                         else:
-                            atpm = agent_gen.send(await command_queue.get())
+                            received_command = await command_queue.get()
+                            atpm = agent_gen.send(received_command)
 
+                        print("Got atpm", flush=True)
                         if atpm:
-                            print("Got atpm")
                             await websocket.send_text(atpm.model_dump_json())
                     except StopIteration:
                         break
+
+                while not command_queue.empty():
+                    _ = command_queue.get_nowait()
         except Exception as e:
             print(f"WebSocket error for {agent_id}: {e}")
         finally:

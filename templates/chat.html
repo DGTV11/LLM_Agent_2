@@ -101,10 +101,9 @@
 
     ws.onmessage = function (event) {
       const atpm = JSON.parse(event.data);
+      console.log("WS raw event:", event.data);
 
       switch (atpm.message_type) {
-        case "keepalive":
-          break;
         case "debug":
           console.log(atpm.payload);
           break;
