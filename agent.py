@@ -325,8 +325,15 @@ class ExitOrContinue(Node):
 
                     loops_since_overthink_warning = 0
                 case _:
-                    raise ValueError("Invalid command (what were you even thinking?)")
-
+                    conn.send(
+                        AgentToParentMessage.model_validate(
+                            {
+                                "message_type": "error",
+                                "payload": "Invalid command",
+                            }
+                        ).model_dump_json()
+                    )
+                    
         elif (
             loops_since_overthink_warning >= OVERTHINK_WARNING_HEARTBEAT_COUNT
             and do_heartbeat
