@@ -586,7 +586,7 @@ def call_agent(
                         orjson.loads(parent_conn.recv())
                     ).root
                     
-                   input_cmd = yield msg
+                    input_cmd = yield msg
                     if input_cmd:
                         parent_conn.send(input_cmd)
                     
