@@ -174,7 +174,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if isinstance(received_data, str):
                             print("Received text frame", flush=True)
 
-                            json_data = orjson.loads(received_data["text"])
+                            json_data = orjson.loads(received_data)
 
                             if first_interaction := json_data.get("first_interaction"):
                                 await user_or_system_message_queue.put(
@@ -245,8 +245,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                             print("Received bytes frame", flush=True)
 
                             assert current_filename, "No file upload in progress"
-                            current_tempfile.write(received_data["bytes"])
-                    except Exception:
+                            current_tempfile.write(received_data)
+                    except Exception as e:
                         if websocket.application_state == WebSocketState.CONNECTED:
                             await websocket.send_text(
                                 AgentToParentMessage.model_validate(
@@ -256,6 +256,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                                     }
                                 ).model_dump_json()
                             )
+                        print(f"Receiver error: {e}", flush=True)
 
             receive_task = asyncio.create_task(receive())
 
@@ -282,7 +283,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                 while not command_queue.empty():
                     _ = command_queue.get_nowait()
         except Exception as e:
-            print(f"WebSocket error for {agent_id}: {e}")
+            print(f"WebSocket error for {agent_id}: {e}", flush=True)
         finally:
             receive_task.cancel()
             if (
