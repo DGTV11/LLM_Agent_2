@@ -581,27 +581,19 @@ def call_agent(
     try:
         while True:
             try:
-                if parent_conn.poll(0.25):
+                while parent_conn.poll():
                     msg = AgentToParentMessage.model_validate(
                         orjson.loads(parent_conn.recv())
                     ).root
+                    
+                   input_cmd = yield msg
+                    if input_cmd:
+                        parent_conn.send(input_cmd)
+                    
                     if msg.message_type == "halt":
-                        yield msg
-                        break
-                else:
-                    msg = None
+                        return
             except EOFError:
                 break
-
-            input_cmd = yield msg
-            if input_cmd:
-                if input_cmd not in [
-                    "halt",
-                    "halt_soon",
-                ]:
-                    input_cmd = "halt"  # *automatically send halt signal because error
-
-                parent_conn.send(input_cmd)
     finally:
         child_conn.close()
         parent_conn.close()
