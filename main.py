@@ -171,10 +171,10 @@ async def chat(agent_id: str, websocket: WebSocket):
                     try:
                         received_data = await websocket.receive()
 
-                        if isinstance(received_data, str):
+                        if "text" in received_data and received_data["text"] is not None:
                             print("Received text frame", flush=True)
 
-                            json_data = orjson.loads(received_data)
+                            json_data = orjson.loads(received_data["text"])
 
                             if first_interaction := json_data.get("first_interaction"):
                                 await user_or_system_message_queue.put(
@@ -188,10 +188,11 @@ async def chat(agent_id: str, websocket: WebSocket):
                                     )
                                 )
 
-                            if user_message_dict := json_data.get("user_message"):
+                            if user_message := json_data.get("user_message"):
                                 await user_or_system_message_queue.put(
-                                    UserOrSystemMessage.model_validate(
-                                        user_message_dict
+                                    UserOrSystemMessage(
+                                        message_type="user",
+                                        message=user_message
                                     )
                                 )
 
@@ -241,11 +242,11 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                                         current_filename = None
                                         current_tempfile.close()
-                        elif isinstance(received_data, bytes):
+                        elif "bytes" in received_data and received_data["bytes"] is not None:
                             print("Received bytes frame", flush=True)
 
                             assert current_filename, "No file upload in progress"
-                            current_tempfile.write(received_data)
+                            current_tempfile.write(received_data["bytes"])
                     except Exception as e:
                         if websocket.application_state == WebSocketState.CONNECTED:
                             await websocket.send_text(
