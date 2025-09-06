@@ -173,6 +173,7 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                         if "text" in received_data and received_data["text"] is not None:
                             print("Received text frame", flush=True)
+                            print(received_data, flush=True)
 
                             json_data = orjson.loads(received_data["text"])
 
