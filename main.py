@@ -293,16 +293,16 @@ async def chat(agent_id: str, websocket: WebSocket):
             ):  # *Conversation exit event
                 await websocket.close()
 
-                send_message(
-                    agent_id,
-                    UserOrSystemMessage(
-                        message_type="system",
-                        message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
-                    ),
-                )
+            send_message(
+                agent_id,
+                UserOrSystemMessage(
+                    message_type="system",
+                    message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
+                ),
+            )
 
-                for _ in agent.call_agent(agent_id):
-                    await asyncio.sleep(0.05)
+            for _ in agent.call_agent(agent_id):
+                await asyncio.sleep(0.05)
 
             scheduler.add_job(
                 heartbeat_query,
