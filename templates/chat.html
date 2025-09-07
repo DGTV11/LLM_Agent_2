@@ -145,6 +145,7 @@
 
     ws.onerror = (err) => {
       console.error("WebSocket error:", err);
+      alert(`Websocket error: ${err}`);
       setIdleState();
     };
     
