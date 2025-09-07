@@ -78,7 +78,6 @@
     }
 
     function setSendingState() {
-      input.value = "";
       messageSendBtn.disabled = true;
       csStatusIndicator.className = "text-green-600 animate-pulse";
     }
@@ -179,6 +178,8 @@
       ws.send(JSON.stringify({
         user_message: input.value
       }));
+    
+      input.value = "";
     }
   
     document.getElementById("messageText")
