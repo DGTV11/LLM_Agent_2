@@ -276,7 +276,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                             received_command = await command_queue.get()
                             atpm = agent_gen.send(received_command)
 
-                        print("Got atpm", flush=True)
+                        print(f"Got atpm {atpm}", flush=True)
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
                     except StopIteration:
