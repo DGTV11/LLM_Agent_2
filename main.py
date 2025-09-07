@@ -287,6 +287,7 @@ async def chat(agent_id: str, websocket: WebSocket):
         except Exception as e:
             print(f"WebSocket error for {agent_id}: {e}", flush=True)
         finally:
+            peint(traceback.format_exc(), flush=True)
             receive_task.cancel()
             if (
                 websocket.application_state != WebSocketState.DISCONNECTED
