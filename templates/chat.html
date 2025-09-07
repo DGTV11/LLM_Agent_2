@@ -107,6 +107,9 @@
         case "debug":
           console.log(atpm.payload);
           break;
+        case "halt":
+          setIdleState();
+          break;
         case "to_user":
           if (atpm.payload.trim().length === 0) {
             break;
