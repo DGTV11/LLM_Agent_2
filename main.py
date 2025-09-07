@@ -264,11 +264,10 @@ async def chat(agent_id: str, websocket: WebSocket):
 
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
-
                 send_message(agent_id, user_or_system_message)
-
+                agent_gen = agent.call_agent(agent_id)
+                
                 while True:  # *Single agent heartbeat loop
-                    agent_gen = agent.call_agent(agent_id)
                     try:
                         if command_queue.empty():
                             atpm = next(agent_gen)
@@ -276,7 +275,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                             received_command = await command_queue.get()
                             atpm = agent_gen.send(received_command)
 
-                        print(f"Got atpm {atpm}", flush=True)
+                        # print(f"Got atpm {atpm}", flush=True)
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
                     except StopIteration:
@@ -287,7 +286,7 @@ async def chat(agent_id: str, websocket: WebSocket):
         except Exception as e:
             print(f"WebSocket error for {agent_id}: {e}", flush=True)
         finally:
-            print(traceback.format_exc(), flush=True)
+            # print(traceback.format_exc(), flush=True)
             receive_task.cancel()
             if (
                 websocket.application_state != WebSocketState.DISCONNECTED
