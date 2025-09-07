@@ -147,6 +147,11 @@
       console.error("WebSocket error:", err);
       setIdleState();
     };
+    
+    ws.onclose = (event) => {
+      console.warn("WebSocket closed:", event);
+      setIdleState();
+    };
 
     function sendMessage() { 
       const input = document.getElementById("messageText");
