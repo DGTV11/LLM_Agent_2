@@ -145,17 +145,21 @@
       }
     };
 
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-      alert(`Websocket error: ${err}`);
+    ws.onerror = (event) => {
+      console.error("WebSocket error event:", event);
+      alert("WebSocket error occurred. Check console for details.");
       setIdleState();
     };
     
     ws.onclose = (event) => {
-      console.warn("WebSocket closed:", event);
+      console.warn("WebSocket closed:", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       setIdleState();
     };
-
+    
     function sendMessage() { 
       const input = document.getElementById("messageText");
 
