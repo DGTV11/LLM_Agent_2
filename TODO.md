@@ -1,2 +1,3 @@
-1. [ ] make websocket single connection per session to reduce chance for errors
-- fix lack of IPC message sending
+1. [ ] Add viewing agent info
+
+2. [ ] Add viewing chat history (optional) OR ai-generated summary
