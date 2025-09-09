@@ -4,7 +4,7 @@ import tempfile
 import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Annotated, DefaultDict, List, Literal, Optional, Union
+from typing import Annotated, BinaryIO, DefaultDict, List, Literal, Optional, Union
 
 import magic
 import orjson
@@ -22,7 +22,14 @@ from starlette.websockets import WebSocketDisconnect, WebSocketState
 import agent
 import doc_upload
 import persona_gen
-from communication import ATPM_Debug, ATPM_Error, ATPM_Halt, ATPM_Message, ATPM_ToUser
+from communication import (
+    AgentToParentMessage,
+    ATPM_Debug,
+    ATPM_Error,
+    ATPM_Halt,
+    ATPM_Message,
+    ATPM_ToUser,
+)
 from config import HEARTBEAT_FREQUENCY_IN_MINUTES, POSTGRES_SQLACADEMY_URL
 from memory import Message, TextContent
 
@@ -157,9 +164,9 @@ async def chat(agent_id: str, websocket: WebSocket):
             command_queue: asyncio.Queue[str] = asyncio.Queue()
 
             # *Init async receiver
-            async def receive():
+            async def receive() -> None:
                 current_filename: Optional[str] = None
-                current_tempfile: Optional[tempfile.TemporaryFile] = None
+                current_tempfile: Optional[BinaryIO] = None
 
                 while True:
                     try:
@@ -207,11 +214,11 @@ async def chat(agent_id: str, websocket: WebSocket):
                                         ), "Filename must not be empty"
                                         current_filename = json_data.get("filename")
                                         current_tempfile = tempfile.TemporaryFile(
-                                            mode="ab+", delete=True
+                                            mode="ab+"
                                         )
                                     case "end":
                                         assert (
-                                            current_filename
+                                            current_filename and current_tempfile
                                         ), "No file upload in progress"
 
                                         memory = agent.get_memory_object(agent_id)
@@ -245,7 +252,9 @@ async def chat(agent_id: str, websocket: WebSocket):
                         ):
                             # print("Received bytes frame", flush=True)
 
-                            assert current_filename, "No file upload in progress"
+                            assert (
+                                current_filename and current_tempfile
+                            ), "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
                     except Exception:
                         if websocket.application_state == WebSocketState.CONNECTED:
@@ -259,12 +268,14 @@ async def chat(agent_id: str, websocket: WebSocket):
                             )
                         print(f"Receiver error: {traceback.format_exc()}", flush=True)
 
-            async def keepalive(ping_interval=30):
-                for ping in itertools.count():
+            async def keepalive(ping_interval: int = 30) -> None:
+                for ping_count in itertools.count():
                     await asyncio.sleep(ping_interval)
                     try:
                         await websocket.send_text(
-                            orjson.dumps({"ping": ping}).decode("utf-8")
+                            AgentToParentMessage.model_validate(
+                                {"message_type": "ping", "count": ping_count}
+                            ).model_dump_json()
                         )
                     except WebSocketDisconnect:
                         break
@@ -289,7 +300,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
 
-                        asyncio.sleep(0.05)
+                        await asyncio.sleep(0.05)
                     except StopIteration:
                         break
 

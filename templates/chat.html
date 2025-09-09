@@ -106,6 +106,9 @@
         case "debug":
           console.log(atpm.payload);
           break;
+        case "ping":
+          console.log(`Ping no. ${atpm.count}`);
+          break;
         case "halt":
           setIdleState();
           break;
