@@ -240,7 +240,7 @@ SET tasks = tasks[2:array_length(tasks,1)]
 WHERE agent_id = %s
 RETURNING (SELECT task_to_return FROM popped);
     """,
-            (self.agent_id,),
+            (self.agent_id, self.agent_id),
         )[0][0]
 
         return popped_task
