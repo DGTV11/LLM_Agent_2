@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import tempfile
 import traceback
 from collections import defaultdict
@@ -16,7 +17,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from pytz import utc
-from starlette.websockets import WebSocketState
+from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 import agent
 import doc_upload
@@ -116,15 +117,8 @@ async def heartbeat_query(agent_id: str):
                 )
             )
 
-            gen = agent.call_agent(agent_id)
-            msg = next(gen)
-
-            while True:
-                try:
-                    msg = next(gen)
-                except StopIteration:
-                    break
-                await asyncio.sleep(0.05)  # small sleep to avoid tight loop
+            for _ in agent.call_agent(agent_id):
+                await asyncio.sleep(0.05)
     finally:
         scheduler.add_job(
             heartbeat_query,
@@ -171,9 +165,12 @@ async def chat(agent_id: str, websocket: WebSocket):
                     try:
                         received_data = await websocket.receive()
 
-                        if "text" in received_data and received_data["text"] is not None:
-                            print("Received text frame", flush=True)
-                            print(received_data, flush=True)
+                        if (
+                            "text" in received_data
+                            and received_data["text"] is not None
+                        ):
+                            # print("Received text frame", flush=True)
+                            # print(received_data, flush=True)
 
                             json_data = orjson.loads(received_data["text"])
 
@@ -192,8 +189,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                             if user_message := json_data.get("user_message"):
                                 await user_or_system_message_queue.put(
                                     UserOrSystemMessage(
-                                        message_type="user",
-                                        message=user_message
+                                        message_type="user", message=user_message
                                     )
                                 )
 
@@ -243,12 +239,15 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                                         current_filename = None
                                         current_tempfile.close()
-                        elif "bytes" in received_data and received_data["bytes"] is not None:
-                            print("Received bytes frame", flush=True)
+                        elif (
+                            "bytes" in received_data
+                            and received_data["bytes"] is not None
+                        ):
+                            # print("Received bytes frame", flush=True)
 
                             assert current_filename, "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
-                    except Exception as e:
+                    except Exception:
                         if websocket.application_state == WebSocketState.CONNECTED:
                             await websocket.send_text(
                                 AgentToParentMessage.model_validate(
@@ -258,15 +257,26 @@ async def chat(agent_id: str, websocket: WebSocket):
                                     }
                                 ).model_dump_json()
                             )
-                        print(f"Receiver error: {e}", flush=True)
+                        print(f"Receiver error: {traceback.format_exc()}", flush=True)
+
+            async def keepalive(ping_interval=30):
+                for ping in itertools.count():
+                    await asyncio.sleep(ping_interval)
+                    try:
+                        await websocket.send_text(
+                            orjson.dumps({"ping": ping}).decode("utf-8")
+                        )
+                    except WebSocketDisconnect:
+                        break
 
             receive_task = asyncio.create_task(receive())
+            keepalive_task = asyncio.create_task(keepalive())
 
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
                 send_message(agent_id, user_or_system_message)
                 agent_gen = agent.call_agent(agent_id)
-                
+
                 while True:  # *Single agent heartbeat loop
                     try:
                         if command_queue.empty():
@@ -278,15 +288,18 @@ async def chat(agent_id: str, websocket: WebSocket):
                         # print(f"Got atpm {atpm}", flush=True)
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
+
+                        asyncio.sleep(0.05)
                     except StopIteration:
                         break
 
                 while not command_queue.empty():
                     _ = command_queue.get_nowait()
         except Exception as e:
-            print(f"WebSocket error for {agent_id}: {e}", flush=True)
+            print(
+                f"WebSocket error for {agent_id}: {traceback.format_exc()}", flush=True
+            )
         finally:
-            print(traceback.format_exc(), flush=True)
             receive_task.cancel()
             if (
                 websocket.application_state != WebSocketState.DISCONNECTED
