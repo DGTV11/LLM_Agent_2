@@ -73,18 +73,26 @@
 
     const ws = new WebSocket("{{ url_for('chat', agent_id=agent_id) }}");
 
+    let agentSending = false;
+
     function scrollToBottom(container) {
       container.scrollTop = container.scrollHeight;
     }
 
     function setSendingState() {
-      messageSendBtn.disabled = true;
       csStatusIndicator.className = "text-green-600 animate-pulse";
+      agentSending = true;
     }
 
     function setIdleState() {
       csStatusIndicator.className = "text-red-600";
-      messageSendBtn.disabled = false;
+      agentSending = false;
+    }
+
+    function setErrorState() {
+      csStatusIndicator.className = "text-purple-600";
+      messageSendBtn.disabled = true;
+      agentSending = false;
     }
 
     ws.onopen = function () {
@@ -151,7 +159,7 @@
     ws.onerror = (event) => {
       console.error("WebSocket error event:", event);
       alert("WebSocket error occurred. Check console for details.");
-      setIdleState();
+      setErrorState();
     };
     
     ws.onclose = (event) => {
@@ -160,7 +168,7 @@
         reason: event.reason,
         wasClean: event.wasClean
       });
-      setIdleState();
+      setErrorState();
     };
     
     function sendMessage() { 
@@ -180,7 +188,13 @@
 
       consciousness_stream.innerHTML = '';
 
-      setSendingState();
+      if (agentSending) {
+        ws.send(JSON.stringify({
+          command: "halt"
+        }));
+      } else {
+        setSendingState();
+      }
 
       ws.send(JSON.stringify({
         user_message: input.value
