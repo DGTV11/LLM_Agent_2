@@ -39,6 +39,10 @@
                             id="messageSendBtn"
                             onclick="sendMessage()">Send message</button>
                 </div>
+                <div id="uploadProgressContainer" class="mt-2 hidden">
+                    <progress id="uploadProgress" max="100" value="0" class="w-full h-4 rounded"></progress>
+                    <p id="progressText" class="text-center text-sm text-gray-600">Uploading: 0%</p>
+                </div>
                 <div class="grid justify-items-start p-2">
                     <button type="button" class="font-bold">
                         <a href="{{ url_for("home_page") }}">Back to home</a>
@@ -224,32 +228,49 @@
 
 
     const fileInput = document.getElementById('fileInput');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('progressText');
+    const uploadProgressContainer = document.getElementById('uploadProgressContainer');
     fileInput.addEventListener('change', async () => {
       if (!fileInput.files.length) return;
 
+      // Show progress bar
+      uploadProgressContainer.classList.remove('hidden');
+
       for (const file of fileInput.files) {
-        // Tell server a new file is starting
-        ws.send(JSON.stringify({
-          file_command: "start",
-          filename: file.name,
-        }));
+          // Tell server a new file is starting
+          ws.send(JSON.stringify({
+              file_command: "start",
+              filename: file.name,
+          }));
 
-        const chunkSize = 64 * 1024; // 64 KB chunks
-        let offset = 0;
+          const chunkSize = 64 * 1024; // 64 KB chunks
+          let offset = 0;
+          const totalSize = file.size;
 
-        while (offset < file.size) {
-          const chunk = file.slice(offset, offset + chunkSize);
-          const arrayBuffer = await chunk.arrayBuffer();
-          ws.send(arrayBuffer);
-          offset += chunkSize;
-        }
+          while (offset < file.size) {
+              const chunk = file.slice(offset, offset + chunkSize);
+              const arrayBuffer = await chunk.arrayBuffer();
+              ws.send(arrayBuffer);
+              offset += chunkSize;
 
-        // Tell server file is done
-        ws.send(JSON.stringify({ file_command: "end" }));
+              // Update progress
+              const progress = Math.min((offset / totalSize) * 100, 100);
+              uploadProgress.value = progress;
+              progressText.textContent = `Uploading: ${Math.round(progress)}%`;
+          }
+
+          // Tell server file is done
+          ws.send(JSON.stringify({ file_command: "end" }));
+
+          // Reset progress bar after file upload completes
+          uploadProgress.value = 0;
+          progressText.textContent = `Uploading: 0%`;
+          uploadProgressContainer.classList.add('hidden');
       }
 
-      // Optional: clear input after processing all files
+      // Clear input after processing all files
       fileInput.value = "";
-    });
+    });    
     </script>
 </html>

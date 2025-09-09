@@ -182,15 +182,24 @@ async def chat(agent_id: str, websocket: WebSocket):
                             json_data = orjson.loads(received_data["text"])
 
                             if first_interaction := json_data.get("first_interaction"):
+                                system_msg = (
+                                    "A new user has entered the conversation. You should greet the user then get to know him."
+                                    if first_interaction
+                                    else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
+                                )
                                 await user_or_system_message_queue.put(
                                     UserOrSystemMessage(
                                         message_type="system",
-                                        message=(
-                                            "A new user has entered the conversation. You should greet the user then get to know him."
-                                            if first_interaction
-                                            else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
-                                        ),
+                                        message=system_msg,
                                     )
+                                )
+                                await websocket.send_text(
+                                    AgentToParentMessage.model_validate(
+                                        {
+                                            "message_type": "system",
+                                            "payload": system_msg,
+                                        }
+                                    ).model_dump_json()
                                 )
 
                             if user_message := json_data.get("user_message"):
@@ -235,13 +244,20 @@ async def chat(agent_id: str, websocket: WebSocket):
                                         memory.archival_storage.archival_insert(
                                             processed_file_text, current_filename
                                         )
+                                        system_msg = f"File {current_filename} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries."
                                         await user_or_system_message_queue.put(
                                             UserOrSystemMessage(
                                                 message_type="system",
-                                                message=(
-                                                    f"File {current_filename} has been uploaded by the user into your Archival Storage. You should explore this file to better answer relevant user queries."
-                                                ),
+                                                message=system_msg,
                                             )
+                                        )
+                                        await websocket.send_text(
+                                            AgentToParentMessage.model_validate(
+                                                {
+                                                    "message_type": "system",
+                                                    "payload": system_msg,
+                                                }
+                                            ).model_dump_json()
                                         )
 
                                         current_filename = None

@@ -23,6 +23,11 @@ class ATPM_ToUser(BaseModel):
     payload: str
 
 
+class ATPM_System(BaseModel):
+    message_type: Literal["system"]
+    payload: str
+
+
 class ATPM_Halt(BaseModel):
     message_type: Literal["halt"]
 
@@ -34,5 +39,11 @@ class ATPM_Ping(BaseModel):
 
 class AgentToParentMessage(RootModel):
     root: (
-        ATPM_Message | ATPM_Debug | ATPM_Error | ATPM_ToUser | ATPM_Halt | ATPM_Ping
+        ATPM_Message
+        | ATPM_Debug
+        | ATPM_Error
+        | ATPM_ToUser
+        | ATPM_System
+        | ATPM_Halt
+        | ATPM_Ping
     ) = Field(discriminator="message_type")
