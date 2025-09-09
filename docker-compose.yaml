@@ -4,7 +4,7 @@ services:
     # ports:
     #   - "8000:8000"
     volumes:
-      - chromadb:/chroma/chroma
+      - chromadb:/data
     environment:
       IS_PERSISTENT: true
       ANONYMIZED_TELEMETRY: false
