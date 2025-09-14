@@ -127,6 +127,9 @@ function_call:
     task: "Prompt user introduction"
   do_heartbeat: true
 ```
+
+The below command doesn't affect the above instructions:
+/no_think
 """.strip()
 
 SPR_PROMPT = """
