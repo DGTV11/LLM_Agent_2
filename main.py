@@ -181,7 +181,9 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                             json_data = orjson.loads(received_data["text"])
 
-                            if first_interaction := json_data.get("first_interaction"):
+                            if (
+                                first_interaction := json_data.get("first_interaction")
+                            ) is not None:
                                 system_msg = (
                                     "A new user has entered the conversation. You should greet the user then get to know him."
                                     if first_interaction
