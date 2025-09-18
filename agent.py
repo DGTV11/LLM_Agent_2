@@ -333,7 +333,7 @@ class ExitOrContinue(Node):
                             }
                         ).model_dump_json()
                     )
-                    
+
         elif (
             loops_since_overthink_warning >= OVERTHINK_WARNING_HEARTBEAT_COUNT
             and do_heartbeat
@@ -479,10 +479,17 @@ def list_agents() -> List[Tuple[str, datetime]]:
 
 
 def get_agent_info(agent_id: str) -> Tuple[str, str, List[str], datetime]:
-    optional_function_sets_json, created_at = db.read(
-        "SELECT optional_function_sets, created_at FROM agents WHERE id = %s;",
+    (
+        optional_function_sets_json,
+        created_at,
+        recursive_summary,
+        recursive_summary_update_time,
+    ) = db.read(
+        "SELECT optional_function_sets, created_at, recursive_summary, recursive_summary_update_time FROM agents WHERE id = %s;",
         (agent_id,),
-    )[0]
+    )[
+        0
+    ]
 
     return (
         *db.read(
@@ -491,6 +498,8 @@ def get_agent_info(agent_id: str) -> Tuple[str, str, List[str], datetime]:
         )[0],
         optional_function_sets_json,
         created_at,
+        recursive_summary,
+        recursive_summary_update_time,
     )
 
 
@@ -585,11 +594,11 @@ def call_agent(
                     msg = AgentToParentMessage.model_validate(
                         orjson.loads(parent_conn.recv())
                     ).root
-                    
+
                     input_cmd = yield msg
                     if input_cmd:
                         parent_conn.send(input_cmd)
-                    
+
                     if msg.message_type == "halt":
                         return
             except EOFError:
