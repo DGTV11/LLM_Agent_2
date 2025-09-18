@@ -43,7 +43,7 @@ def call_llm(messages: List[Dict[str, str]]) -> str:
 def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
     last_error = None
 
-    for model in LLM_MODELS:
+    for model in VLM_MODELS:
         try:
             completion = vlm_client.chat.completions.create(
                 model=model.strip(),
