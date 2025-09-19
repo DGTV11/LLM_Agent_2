@@ -120,6 +120,7 @@
           break;
         case "ping":
           console.log(`Ping no. ${atpm.count}`);
+          ws.send(JSON.stringify({ pong: msg.count }));
           break;
         case "halt":
           setIdleState();
@@ -267,10 +268,16 @@
           uploadProgress.value = 0;
           progressText.textContent = `Uploading: 0%`;
           uploadProgressContainer.classList.add('hidden');
+
+          // Clear input after processing all files
+          fileInput.value = "";
       }
 
-      // Clear input after processing all files
-      fileInput.value = "";
-    });    
+      window.addEventListener("beforeunload", () => {
+          if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ command: "__DISCONNECT__" }));
+              ws.close();
+          }
+      });
     </script>
 </html>

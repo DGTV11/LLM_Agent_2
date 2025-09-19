@@ -151,9 +151,13 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
 @app.websocket("/api/agents/{agent_id}/chat")
 async def chat(agent_id: str, websocket: WebSocket):
     await websocket.accept()
+    last_pong = datetime.now()
+    PING_INTERVAL = 15
+    PONG_TIMEOUT = 30
 
     async with agent_semaphores[agent_id]:
         try:
+            print("Removing heartbeat jobs...", flush=True)
             if scheduler.get_job(agent_id):  # *Remove scheduled heartbeat query
                 scheduler.remove_job(agent_id)
 
@@ -167,6 +171,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             async def receive() -> None:
                 current_filename: Optional[str] = None
                 current_tempfile: Optional[BinaryIO] = None
+                nonlocal last_pong
 
                 while True:
                     try:
@@ -206,6 +211,10 @@ async def chat(agent_id: str, websocket: WebSocket):
                                     ).model_dump_json()
                                 )
 
+                            if json_data.get("pong"):
+                                last_pong = datetime.now()
+                                continue
+
                             if user_message := json_data.get("user_message"):
                                 await user_or_system_message_queue.put(
                                     UserOrSystemMessage(
@@ -214,6 +223,14 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 )
 
                             if command := json_data.get("command"):
+                                if command == "__DISCONNECT__":
+                                    await user_or_system_message_queue.put(
+                                        UserOrSystemMessage(
+                                            message_type="system",
+                                            message="__DISCONNECT__",
+                                        )
+                                    )
+                                    break
                                 await command_queue.put(command)
 
                             if file_command := json_data.get("file_command"):
@@ -277,6 +294,11 @@ async def chat(agent_id: str, websocket: WebSocket):
                             ), "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
                     except WebSocketDisconnect:
+                        await user_or_system_message_queue.put(
+                            UserOrSystemMessage(
+                                message_type="system", message="__DISCONNECT__"
+                            )
+                        )
                         break
                     except Exception:
                         if websocket.application_state == WebSocketState.CONNECTED:
@@ -290,9 +312,19 @@ async def chat(agent_id: str, websocket: WebSocket):
                             )
                         print(f"Receiver error: {traceback.format_exc()}", flush=True)
 
-            async def keepalive(ping_interval: int = 30) -> None:
+            async def keepalive() -> None:
+                nonlocal last_pong
                 for ping_count in itertools.count():
-                    await asyncio.sleep(ping_interval)
+                    await asyncio.sleep(PING_INTERVAL)
+                    # Check pong timeout
+                    if (datetime.now() - last_pong).total_seconds() > PONG_TIMEOUT:
+                        await user_or_system_message_queue.put(
+                            UserOrSystemMessage(
+                                message_type="system", message="__DISCONNECT__"
+                            )
+                        )
+                        break
+                    # Send ping
                     try:
                         await websocket.send_text(
                             AgentToParentMessage.model_validate(
@@ -302,11 +334,16 @@ async def chat(agent_id: str, websocket: WebSocket):
                     except WebSocketDisconnect:
                         break
 
+            print("Starting receiver and keepalive tasks...", flush=True)
             receive_task = asyncio.create_task(receive())
             keepalive_task = asyncio.create_task(keepalive())
 
+            print("Starting main chat loop...", flush=True)
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
+                if msg.message == "__DISCONNECT__":
+                    break
+
                 send_message(agent_id, user_or_system_message)
                 agent_gen = agent.call_agent(agent_id)
 
@@ -333,6 +370,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                 f"WebSocket error for {agent_id}: {traceback.format_exc()}", flush=True
             )
         finally:
+            print("Cleaning up session for termination...", flush=True)
             receive_task.cancel()
             keepalive_task.cancel()
             await asyncio.gather(receive_task, keepalive_task, return_exceptions=True)
@@ -345,14 +383,14 @@ async def chat(agent_id: str, websocket: WebSocket):
                 agent_id,
                 UserOrSystemMessage(
                     message_type="system",
-                    # message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
-                    message="The user has exited the conversation.",
+                    message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
                 ),
             )
 
-            # for _ in agent.call_agent(agent_id):
-            #     await asyncio.sleep(0.05)
+            for _ in agent.call_agent(agent_id):
+                await asyncio.sleep(0.05)
 
+            print("Adding heartbeat job...", flush=True)
             scheduler.add_job(
                 heartbeat_query,
                 "date",
@@ -362,6 +400,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                 id=agent_id,
                 replace_existing=True,
             )  # *Add new scheduled heartbeat query
+
+            print("Session terminated!", flush=True)
 
 
 # * Frontend
