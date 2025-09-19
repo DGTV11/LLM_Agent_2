@@ -11,7 +11,7 @@ from config import HF_LLM_NAME, HF_TOKEN, LLM_CONFIG, VLM_CONFIG
 llm_backends = [
     (
         backend["name"],
-        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=1),
+        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=0),
         backend["models"],
     )
     for backend in LLM_CONFIG
@@ -19,7 +19,7 @@ llm_backends = [
 vlm_backends = [
     (
         backend["name"],
-        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=1),
+        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=0),
         backend["models"],
     )
     for backend in VLM_CONFIG
@@ -91,7 +91,7 @@ def extract_yaml(resp: str) -> Dict[str, Any]:
         yaml_str = match.group(1).strip()
     else:
         # fallback: maybe whole response is YAML
-        resp_no_thoughts = re.sub(r"^<thought>.*?</thought>", "", resp, flags=re.DOTALL)
+        resp_no_thoughts = re.sub(r"^<think>.*?</think>", "", resp, flags=re.DOTALL)
         yaml_str = resp_no_thoughts.strip()
 
     return yaml.safe_load(yaml_str)
