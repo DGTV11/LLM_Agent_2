@@ -276,6 +276,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 current_filename and current_tempfile
                             ), "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
+                    except WebSocketDisconnect:
+                        break
                     except Exception:
                         if websocket.application_state == WebSocketState.CONNECTED:
                             await websocket.send_text(
@@ -332,6 +334,8 @@ async def chat(agent_id: str, websocket: WebSocket):
             )
         finally:
             receive_task.cancel()
+            keepalive_task.cancel()
+            await asyncio.gather(receive_task, keepalive_task, return_exceptions=True)
             if (
                 websocket.application_state != WebSocketState.DISCONNECTED
             ):  # *Conversation exit event
