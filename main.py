@@ -151,9 +151,9 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
 @app.websocket("/api/agents/{agent_id}/chat")
 async def chat(agent_id: str, websocket: WebSocket):
     await websocket.accept()
-    last_pong = datetime.now()
+    # last_pong = datetime.now()
     PING_INTERVAL = 15
-    PONG_TIMEOUT = 30
+    # PONG_TIMEOUT = 30
 
     async with agent_semaphores[agent_id]:
         try:
@@ -171,7 +171,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             async def receive() -> None:
                 current_filename: Optional[str] = None
                 current_tempfile: Optional[BinaryIO] = None
-                nonlocal last_pong
+                # nonlocal last_pong
 
                 while True:
                     try:
@@ -211,9 +211,9 @@ async def chat(agent_id: str, websocket: WebSocket):
                                     ).model_dump_json()
                                 )
 
-                            if json_data.get("pong"):
-                                last_pong = datetime.now()
-                                continue
+                            # if json_data.get("pong"):
+                            #     last_pong = datetime.now()
+                            #     continue
 
                             if user_message := json_data.get("user_message"):
                                 await user_or_system_message_queue.put(
@@ -313,17 +313,17 @@ async def chat(agent_id: str, websocket: WebSocket):
                         print(f"Receiver error: {traceback.format_exc()}", flush=True)
 
             async def keepalive() -> None:
-                nonlocal last_pong
+                # nonlocal last_pong
                 for ping_count in itertools.count():
                     await asyncio.sleep(PING_INTERVAL)
-                    # Check pong timeout
-                    if (datetime.now() - last_pong).total_seconds() > PONG_TIMEOUT:
-                        await user_or_system_message_queue.put(
-                            UserOrSystemMessage(
-                                message_type="system", message="__DISCONNECT__"
-                            )
-                        )
-                        break
+                    # # Check pong timeout
+                    # if (datetime.now() - last_pong).total_seconds() > PONG_TIMEOUT:
+                    #     await user_or_system_message_queue.put(
+                    #         UserOrSystemMessage(
+                    #             message_type="system", message="__DISCONNECT__"
+                    #         )
+                    #     )
+                    #     break
                     # Send ping
                     try:
                         await websocket.send_text(

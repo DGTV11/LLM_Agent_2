@@ -120,7 +120,7 @@
           break;
         case "ping":
           console.log(`Ping no. ${atpm.count}`);
-          ws.send(JSON.stringify({ pong: atpm.count }));
+          // ws.send(JSON.stringify({ pong: atpm.count }));
           break;
         case "halt":
           setIdleState();
