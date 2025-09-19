@@ -6,57 +6,68 @@ import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer  # type: ignore[attr-defined]
 
-from config import (
-    HF_LLM_NAME,
-    HF_TOKEN,
-    LLM_API_BASE_URL,
-    LLM_API_KEY,
-    LLM_MODELS,
-    VLM_API_BASE_URL,
-    VLM_API_KEY,
-    VLM_MODELS,
-)
+from config import HF_LLM_NAME, HF_TOKEN, LLM_CONFIG, VLM_CONFIG
 
-llm_client = OpenAI(base_url=LLM_API_BASE_URL, api_key=LLM_API_KEY)
-vlm_client = OpenAI(base_url=VLM_API_BASE_URL, api_key=VLM_API_KEY)
+llm_backends = [
+    (
+        backend["name"],
+        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=1),
+        backend["models"],
+    )
+    for backend in LLM_CONFIG
+]
+vlm_backends = [
+    (
+        backend["name"],
+        OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=1),
+        backend["models"],
+    )
+    for backend in VLM_CONFIG
+]
 
 
 def call_llm(messages: List[Dict[str, str]]) -> str:
-    last_error = None
+    errors = []
 
-    for model in LLM_MODELS:
-        try:
-            completion = llm_client.chat.completions.create(
-                model=model.strip(),
-                messages=cast(Any, messages),
-            )
+    for name, client, models in llm_backends:
+        for model in models:
+            try:
+                completion = client.chat.completions.create(
+                    model=model.strip(),
+                    messages=cast(Any, messages),
+                )
 
-            assert completion.choices[0].message.content
-            return completion.choices[0].message.content
-        except Exception as e:
-            last_error = e
-            print(f"{model} failed: {e}", flush=True)
+                assert completion.choices[
+                    0
+                ].message.content, "Empty completion from LLM"
+                return completion.choices[0].message.content
+            except Exception as e:
+                errors.append(f"backend {name} model {model}: {e}")
+                print(f"LLM backend {name} model {model} failed: {e}", flush=True)
 
-    raise RuntimeError(f"All models failed: {last_error}")
+    raise RuntimeError(f"All LLM models failed:\n" + "\n".join(errors))
 
 
 def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
-    last_error = None
+    errors = []
 
-    for model in VLM_MODELS:
-        try:
-            completion = vlm_client.chat.completions.create(
-                model=model.strip(),
-                messages=cast(Any, messages),
-            )
+    for name, client, models in vlm_backends:
+        for model in models:
+            try:
+                completion = client.chat.completions.create(
+                    model=model.strip(),
+                    messages=cast(Any, messages),
+                )
 
-            assert completion.choices[0].message.content
-            return completion.choices[0].message.content
-        except Exception as e:
-            last_error = e
-            print(f"{model} failed: {e}", flush=True)
+                assert completion.choices[
+                    0
+                ].message.content, "Empty completion from LLM"
+                return completion.choices[0].message.content
+            except Exception as e:
+                errors.append(f"backend {name} model {model}: {e}")
+                print(f"VLM backend {name} model {model} failed: {e}", flush=True)
 
-    raise RuntimeError(f"All models failed: {last_error}")
+    raise RuntimeError(f"All VLM models failed:\n" + "\n".join(errors))
 
 
 # *FOR IMAGES
@@ -80,7 +91,8 @@ def extract_yaml(resp: str) -> Dict[str, Any]:
         yaml_str = match.group(1).strip()
     else:
         # fallback: maybe whole response is YAML
-        yaml_str = resp.strip()
+        resp_no_thoughts = re.sub(r"^<thought>.*?</thought>", "", resp, flags=re.DOTALL)
+        yaml_str = resp_no_thoughts.strip()
 
     return yaml.safe_load(yaml_str)
 

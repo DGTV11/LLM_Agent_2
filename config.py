@@ -1,12 +1,6 @@
 from os import getenv
 
-LLM_API_BASE_URL = str(getenv("LLM_API_BASE_URL"))
-LLM_API_KEY = str(getenv("LLM_API_KEY"))
-LLM_MODELS = str(getenv("LLM_MODELS")).split(",")
-
-VLM_API_BASE_URL = str(getenv("VLM_API_BASE_URL"))
-VLM_API_KEY = str(getenv("VLM_API_KEY"))
-VLM_MODELS = str(getenv("VLM_MODELS")).split(",")
+import yaml
 
 HF_TOKEN = str(getenv("HF_TOKEN"))
 HF_LLM_NAME = str(getenv("HF_LLM_NAME"))
@@ -41,3 +35,8 @@ POSTGRES_URL = (
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
 )
 POSTGRES_SQLACADEMY_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
+
+with open("backends.yaml", "r") as f:
+    backends_config = yaml.safe_load(f)
+    LLM_CONFIG = backends_config["llm_backends"]
+    VLM_CONFIG = backends_config["vlm_backends"]
