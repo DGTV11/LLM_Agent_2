@@ -341,7 +341,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             print("Starting main chat loop...", flush=True)
             while True:  # *Chat loop
                 user_or_system_message = await user_or_system_message_queue.get()
-                if msg.message == "__DISCONNECT__":
+                if user_or_system_message.message == "__DISCONNECT__":
                     break
 
                 send_message(agent_id, user_or_system_message)
@@ -379,6 +379,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             ):  # *Conversation exit event
                 await websocket.close()
 
+            print("Triggering agent heartbeat", flush=True)
             send_message(
                 agent_id,
                 UserOrSystemMessage(
