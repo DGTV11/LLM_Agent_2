@@ -9,8 +9,7 @@
     <body class="p-8">
         <h1 class="font-bold text-8xl pb-8">Agents</h1>
         <div>
-            <!-- <ul class="list-disc list-inside"> -->
-            <ul>
+            <ul class="flex flex-col gap-4">
                 {% for id, created_at, optional_function_sets, agent_persona, user_persona, recursive_summary, recursive_summary_update_time in agent_infos %}
                     <li class="border-black border-2 rounded-2xl p-4 flex flex-col gap-2">
                         <div class="flex justify-between items-center">
