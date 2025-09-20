@@ -25,6 +25,7 @@ services:
     volumes:
       # - .:/app
       # - /app/.venv
+      - ./backends.yaml:/app/backends.yaml
       - /var/run/docker.sock:/var/run/docker.sock
     ports: 
       - "5047:5047"
