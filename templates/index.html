@@ -12,7 +12,7 @@
             <!-- <ul class="list-disc list-inside"> -->
             <ul>
                 {% for id, created_at, optional_function_sets, agent_persona, user_persona, recursive_summary, recursive_summary_update_time in agent_infos %}
-                    <li class="border-2 rounded-2xl p-4 flex flex-col gap-2">
+                    <li class="border-black border-2 rounded-2xl p-4 flex flex-col gap-2">
                         <div class="flex justify-between items-center">
                             <h2 class="font-bold text-lg">
                                 <a href="{{ url_for('chat_page', agent_id=id) }}">{{ id }}</a>
@@ -22,12 +22,7 @@
                                     data-url="/api/agents/{{ id }}">Delete</button>
                         </div>
                         <p class="text-sm text-gray-500">Created at {{ created_at }}</p>
-                        <p class="italic text-gray-700 relative group">
-                            "{{ agent_persona|truncate(120, killwords=False, end='...') }}"
-                            <span class="absolute left-0 bottom-full mb-2 hidden w-64 rounded-lg bg-gray-800 text-white text-sm p-2 group-hover:block z-10">
-                                {{ agent_persona }}
-                            </span>
-                        </p>
+                        <p class="italic text-gray-700">"{{ agent_persona }}"</p>
                         <div class="mt-2">
                             {% for ofc in optional_function_sets %}
                                 <span class="text-xs bg-gray-200 rounded-full px-2 py-0.5">{{ ofc }}</span>
