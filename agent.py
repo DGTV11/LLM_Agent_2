@@ -16,7 +16,7 @@ from typing import (
     TypedDict,
     Union,
 )
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import orjson
 import yaml
@@ -474,33 +474,26 @@ def create_new_agent(
     return str(agent_id)
 
 
-def list_agents() -> List[Tuple[str, datetime]]:
-    return db.read("SELECT id, created_at FROM agents;")
-
-
-def get_agent_info(agent_id: str) -> Tuple[str, str, List[str], datetime]:
-    (
-        optional_function_sets_json,
-        created_at,
-        recursive_summary,
-        recursive_summary_update_time,
-    ) = db.read(
-        "SELECT optional_function_sets, created_at, recursive_summary, recursive_summary_update_time FROM agents WHERE id = %s;",
-        (agent_id,),
-    )[
-        0
-    ]
-
-    return (
-        *db.read(
-            "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = %s;",
-            (agent_id,),
-        )[0],
-        optional_function_sets_json,
-        created_at,
-        recursive_summary,
-        recursive_summary_update_time,
+def get_agents() -> List[Tuple[UUID, datetime, List[str], str, str, str, datetime]]:
+    # return db.read("SELECT id, created_at FROM agents;")
+    partial_agent_infos = db.read(
+        "SELECT id, created_at, optional_function_sets, recursive_summary, recursive_summary_update_time FROM agents;"
     )
+
+    return [
+        (
+            id,
+            created_at,
+            optional_function_sets,
+            *db.read(
+                "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = %s;",
+                (id,),
+            )[0],
+            recursive_summary,
+            recursive_summary_update_time,
+        )
+        for id, created_at, optional_function_sets, recursive_summary, recursive_summary_update_time in partial_agent_infos
+    ]
 
 
 def delete_agent(agent_id: str) -> None:
@@ -577,7 +570,7 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
 def call_agent(
     agent_id: str,
 ) -> Generator[
-    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, None],
+    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, ATPM_Ping],
     str,
     None,
 ]:

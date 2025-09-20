@@ -69,13 +69,8 @@ def list_optional_function_sets():
 
 
 @app.get("/api/agents")
-def list_agents():
-    return agent.list_agents()
-
-
-@app.get("/api/agents/{agent_id}")
-def get_agent_info(agent_id: str):
-    return agent.get_agent_info(agent_id)
+def get_agents():
+    return agent.get_agents()
 
 
 @app.delete("/api/agents/{agent_id}")
@@ -110,33 +105,6 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
-async def heartbeat_query(agent_id: str):
-    try:
-        async with agent_semaphores[agent_id]:
-            memory = agent.get_memory_object(agent_id)
-            memory.push_message(
-                Message(
-                    message_type="system",
-                    timestamp=datetime.now(),
-                    content=TextContent(
-                        message="This is a timed heartbeat event. You should do some background tasks (if necessary) and reflect about your current conversational state and improvements you can make to yourself before going into standby mode."
-                    ),
-                )
-            )
-
-            for _ in agent.call_agent(agent_id):
-                await asyncio.sleep(0.05)
-    finally:
-        scheduler.add_job(
-            heartbeat_query,
-            "date",
-            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
-            args=[agent_id],
-            id=agent_id,
-            replace_existing=True,
-        )
-
-
 def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
     memory = agent.get_memory_object(agent_id)
     memory.push_message(
@@ -146,6 +114,32 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
             content=TextContent(message=user_or_system_message.message),
         )
     )
+
+
+async def heartbeat_query(agent_id: str):
+    try:
+        async with agent_semaphores[agent_id]:
+            print("(Automatic heartbeat) Triggering agent heartbeat...")
+            send_message(
+                agent_id,
+                UserOrSystemMessage(
+                    message_type="system",
+                    message="This is a timed heartbeat event. You should do some background tasks (if necessary) and reflect about your current conversational state and improvements you can make to yourself before going into standby mode.",
+                ),
+            )
+
+            for _ in agent.call_agent(agent_id):
+                await asyncio.sleep(0.05)
+    finally:
+        print("(Automatic heartbeat) Setting next heartbeat job...", flush=True)
+        scheduler.add_job(
+            heartbeat_query,
+            "date",
+            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+            args=[agent_id],
+            id=agent_id,
+            replace_existing=True,
+        )
 
 
 @app.websocket("/api/agents/{agent_id}/chat")
@@ -379,7 +373,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             ):  # *Conversation exit event
                 await websocket.close()
 
-            print("Triggering agent heartbeat", flush=True)
+            print("Triggering agent heartbeat...", flush=True)
             send_message(
                 agent_id,
                 UserOrSystemMessage(
@@ -391,7 +385,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             for _ in agent.call_agent(agent_id):
                 await asyncio.sleep(0.05)
 
-            print("Adding heartbeat job...", flush=True)
+            print("Setting next heartbeat job...", flush=True)
             scheduler.add_job(
                 heartbeat_query,
                 "date",
@@ -413,7 +407,7 @@ def home_page(
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"agent_infos": agent.list_agents()},
+        context={"agent_infos": agent.get_agents()},
     )
 
 
