@@ -119,7 +119,7 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
 async def heartbeat_query(agent_id: str):
     try:
         async with agent_semaphores[agent_id]:
-            print("(Automatic heartbeat) Triggering agent heartbeat...")
+            print("(Automatic heartbeat) Triggering agent heartbeat...", flush=True)
             send_message(
                 agent_id,
                 UserOrSystemMessage(
