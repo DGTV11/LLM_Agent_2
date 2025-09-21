@@ -77,7 +77,7 @@ class ScrapeWebpage(FunctionNode):
         conn: Connection,
         arguments_validated: ScrapeWebpageValidator,
     ) -> Message:
-        r = requests.get(url)
+        r = requests.get(arguments_validated.url)
         soup = BeautifulSoup(r.content, "html.parser")
 
         return Message(
