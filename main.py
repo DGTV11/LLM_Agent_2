@@ -44,7 +44,7 @@ agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
 jobstores = {"default": SQLAlchemyJobStore(url=POSTGRES_SQLACADEMY_URL)}
 executors = {
     "default": AsyncIOExecutor(),
-    # "threadpool": ThreadPoolExecutor(20) 
+    "threadpool": ThreadPoolExecutor(20) 
 }
 job_defaults = {"coalesce": True, "max_instances": 3}
 scheduler = AsyncIOScheduler(
