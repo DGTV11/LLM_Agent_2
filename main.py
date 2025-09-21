@@ -11,7 +11,7 @@ import orjson
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler, AsyncIOExecutor
 from fastapi import FastAPI, Form, Request, UploadFile, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -43,7 +43,8 @@ agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
 
 jobstores = {"default": SQLAlchemyJobStore(url=POSTGRES_SQLACADEMY_URL)}
 executors = {
-    "default": ThreadPoolExecutor(20),
+    "default": AsyncIOExecutor(),
+    # "threadpool": ThreadPoolExecutor(20) 
 }
 job_defaults = {"coalesce": True, "max_instances": 3}
 scheduler = AsyncIOScheduler(
