@@ -14,11 +14,11 @@
     <body class="p-8 w-full h-screen flex flex-col">
         <h1 class="font-bold text-8xl pb-8">Chat</h1>
         <p>You are chatting with an agent with id {{ agent_id }}</p>
-        <div class="grid grid-cols-[3fr_1fr] gap-4 min-h-0">
+        <div class="grid grid-cols-[3fr_1fr] gap-4 flex-1 min-h-0">
             <div class="p-4 flex flex-col min-h-0 gap-2">
                 <h2 class="font-bold text-4xl pb-4">Conversation</h2>
                 <ul id="messages"
-                    class='flex overflow-auto flex-col gap-2 max-h-full [&>li]:text-wrap [&>li]:p-2 [&>li]:border-2 [&>li]:rounded-2xl'>
+                    class='flex flex-1 overflow-auto flex-col gap-2 max-h-full [&>li]:text-wrap [&>li]:p-2 [&>li]:border-2 [&>li]:rounded-2xl'>
                 </ul>
                 <div class="w-full grid grid-cols-[1fr_4fr_1fr] gap-2 border-black border-2 p-2 rounded-2xl">
                     <form id="fileUploadForm" enctype="multipart/form-data">
@@ -55,7 +55,7 @@
                     Status: <span id="cs-status" class="text-red-600">&#9679;</span>
                 </p>
                 <ul id="consciousness-stream"
-                    class='flex overflow-auto flex-col gap-2 max-h-full [&>li]:text-wrap [&>li]:p-2 [&>li]:border-black [&>li]:border-2 [&>li]:rounded-2xl'>
+                    class='flex flex-1 overflow-auto flex-col gap-2 max-h-full [&>li]:text-wrap [&>li]:p-2 [&>li]:border-black [&>li]:border-2 [&>li]:rounded-2xl'>
                 </ul>
                 <div class="flex gap-4">
                     <button class="font-bold text-yellow-600" type="button" id='haltSoonBtn'>Halt soon</button>
