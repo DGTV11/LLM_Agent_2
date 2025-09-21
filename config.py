@@ -31,9 +31,7 @@ POSTGRES_USER = str(getenv("POSTGRES_USER"))
 POSTGRES_PASSWORD = str(getenv("POSTGRES_PASSWORD"))
 POSTGRES_DB = str(getenv("POSTGRES_DB"))
 
-POSTGRES_URL = (
-    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
-)
+POSTGRES_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
 POSTGRES_SQLACADEMY_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
 
 with open("backends.yaml", "r") as f:

@@ -119,7 +119,7 @@ def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
 async def heartbeat_query(agent_id: str):
     try:
         async with agent_semaphores[agent_id]:
-            print("(Automatic heartbeat) Triggering agent heartbeat...", flush=True)
+            print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
             send_message(
                 agent_id,
                 UserOrSystemMessage(
@@ -131,11 +131,12 @@ async def heartbeat_query(agent_id: str):
             for _ in agent.call_agent(agent_id):
                 await asyncio.sleep(0.05)
     finally:
-        print("(Automatic heartbeat) Setting next heartbeat job...", flush=True)
+        print("(Timed heartbeat) Setting next heartbeat job...", flush=True)
         scheduler.add_job(
             heartbeat_query,
             "date",
-            run_date=datetime.now() + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
+            run_date=datetime.now(utc)
+            + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
             args=[agent_id],
             id=agent_id,
             replace_existing=True,
@@ -389,7 +390,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             scheduler.add_job(
                 heartbeat_query,
                 "date",
-                run_date=datetime.now()
+                run_date=datetime.now(utc)
                 + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
                 args=[agent_id],
                 id=agent_id,
