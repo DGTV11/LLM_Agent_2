@@ -8,8 +8,8 @@ from typing import Annotated, BinaryIO, DefaultDict, List, Literal, Optional, Un
 
 import magic
 import orjson
-from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.executors.asyncio import AsyncIOExecutor
+from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -43,10 +43,7 @@ agent_semaphores: DefaultDict[str, asyncio.Semaphore] = defaultdict(
 
 
 jobstores = {"default": SQLAlchemyJobStore(url=POSTGRES_SQLACADEMY_URL)}
-executors = {
-    "default": AsyncIOExecutor(),
-    "threadpool": ThreadPoolExecutor(20) 
-}
+executors = {"default": AsyncIOExecutor(), "threadpool": ThreadPoolExecutor(20)}
 job_defaults = {"coalesce": True, "max_instances": 3}
 scheduler = AsyncIOScheduler(
     jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc
@@ -453,7 +450,7 @@ def create_page(request: Request):
     )
 
 
-@app.get("/{agent_id}")
+@app.get("/chat/{agent_id}")
 def chat_page(agent_id: str, request: Request):
     return templates.TemplateResponse(
         request=request,
