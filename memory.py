@@ -523,6 +523,7 @@ class Memory:
     function_sets: FunctionSets
     fifo_queue: FIFOQueue
     agent_id: str
+    in_convo: bool
 
     def __repr__(self) -> str:
         return f"""

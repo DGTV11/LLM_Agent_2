@@ -31,6 +31,7 @@ from communication import (
     ATPM_Halt,
     ATPM_Message,
     ATPM_Ping,
+    ATPM_System,
     ATPM_ToUser,
 )
 from config import (
@@ -381,7 +382,7 @@ class ExitOrContinue(Node):
 
 
 # *Helper functions
-def get_memory_object(agent_id: str):
+def get_memory_object(agent_id: str, in_convo: bool):
     return Memory(
         working_context=WorkingContext(agent_id=agent_id),
         archival_storage=ArchivalStorage(agent_id=agent_id),
@@ -389,6 +390,7 @@ def get_memory_object(agent_id: str):
         function_sets=FunctionSets(agent_id=agent_id),
         fifo_queue=FIFOQueue(agent_id=agent_id),
         agent_id=agent_id,
+        in_convo=in_convo,
     )
 
 
@@ -519,7 +521,7 @@ def list_optional_function_sets() -> List[str]:
     )
 
 
-def call_agent_worker(agent_id: str, conn: Connection) -> None:
+def call_agent_worker(agent_id: str, in_convo: bool, conn: Connection) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         conn.send(
@@ -527,7 +529,7 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
                 {"message_type": "debug", "payload": "Loading agent memory..."}
             ).model_dump_json()
         )
-        memory = get_memory_object(agent_id)
+        memory = get_memory_object(agent_id, in_convo)
 
         conn.send(
             AgentToParentMessage.model_validate(
@@ -568,15 +570,21 @@ def call_agent_worker(agent_id: str, conn: Connection) -> None:
         conn.close()
 
 
-def call_agent(
-    agent_id: str,
-) -> Generator[
-    Union[ATPM_Message, ATPM_Debug, ATPM_Error, ATPM_ToUser, ATPM_Halt, ATPM_Ping],
+def call_agent(agent_id: str, in_convo: bool = True) -> Generator[
+    Union[
+        ATPM_Message,
+        ATPM_Debug,
+        ATPM_Error,
+        ATPM_ToUser,
+        ATPM_System,
+        ATPM_Halt,
+        ATPM_Ping,
+    ],
     str,
     None,
 ]:
     parent_conn, child_conn = Pipe()
-    p = Process(target=call_agent_worker, args=(agent_id, child_conn))
+    p = Process(target=call_agent_worker, args=(agent_id, in_convo, child_conn))
     p.start()
 
     # print("Stream start")

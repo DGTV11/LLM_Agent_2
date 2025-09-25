@@ -104,8 +104,10 @@ class UserOrSystemMessage(BaseModel):
     message: str
 
 
-def send_message(agent_id: str, user_or_system_message: UserOrSystemMessage):
-    memory = agent.get_memory_object(agent_id)
+def send_message(
+    agent_id: str, in_convo: bool, user_or_system_message: UserOrSystemMessage
+):
+    memory = agent.get_memory_object(agent_id, in_convo)
     memory.push_message(
         Message(
             message_type=user_or_system_message.message_type,
@@ -121,13 +123,14 @@ async def heartbeat_query(agent_id: str):
             print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
             send_message(
                 agent_id,
+                False,
                 UserOrSystemMessage(
                     message_type="system",
                     message="This is a timed heartbeat event. You should do some background tasks (if necessary) and reflect about your current conversational state and improvements you can make to yourself before going into standby mode.",
                 ),
             )
 
-            for _ in agent.call_agent(agent_id):
+            for _ in agent.call_agent(agent_id, False):
                 await asyncio.sleep(0.05)
     finally:
         print("(Timed heartbeat) Setting next heartbeat job...", flush=True)
@@ -245,7 +248,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                                             current_filename and current_tempfile
                                         ), "No file upload in progress"
 
-                                        memory = agent.get_memory_object(agent_id)
+                                        memory = agent.get_memory_object(agent_id, True)
 
                                         current_tempfile.seek(0)
                                         file_bytes = current_tempfile.read()
@@ -338,8 +341,8 @@ async def chat(agent_id: str, websocket: WebSocket):
                 if user_or_system_message.message == "__DISCONNECT__":
                     break
 
-                send_message(agent_id, user_or_system_message)
-                agent_gen = agent.call_agent(agent_id)
+                send_message(agent_id, True, user_or_system_message)
+                agent_gen = agent.call_agent(agent_id, True)
 
                 while True:  # *Single agent heartbeat loop
                     try:
@@ -376,13 +379,14 @@ async def chat(agent_id: str, websocket: WebSocket):
             print("Triggering agent heartbeat...", flush=True)
             send_message(
                 agent_id,
+                False,
                 UserOrSystemMessage(
                     message_type="system",
                     message="The user has exited the conversation. You should do some background tasks (if necessary) before going into standby mode.",
                 ),
             )
 
-            for _ in agent.call_agent(agent_id):
+            for _ in agent.call_agent(agent_id, False):
                 await asyncio.sleep(0.05)
 
             print("Setting next heartbeat job...", flush=True)
