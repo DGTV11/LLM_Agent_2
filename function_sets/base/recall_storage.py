@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import ceil
 from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Literal, Optional
 
@@ -38,7 +39,7 @@ class RecallSearch(FunctionNode):
     ) -> Message:
         messages = memory.recall_storage.text_search(arguments_validated.query_text)
 
-        result_str = f"Results for page {arguments_validated.page}:"
+        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)}:"
         offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(
@@ -90,7 +91,7 @@ class RecallSearchByDate(FunctionNode):
             arguments_validated.start_timestamp, arguments_validated.end_timestamp
         )
 
-        result_str = f"Results for page {arguments_validated.page}:"
+        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)}:"
         offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(

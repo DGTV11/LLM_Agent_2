@@ -76,14 +76,16 @@ class ArchivalSearch(FunctionNode):
         conn: Connection,
         arguments_validated: ArchivalSearchValidator,
     ) -> Message:
-        page_dicts = memory.archival_storage.archival_search(
+        page_dicts, no_results = memory.archival_storage.archival_search(
             arguments_validated.query,
             arguments_validated.page * PAGE_SIZE,
             PAGE_SIZE,
             arguments_validated.category,
         )
 
-        result_str = f"Results for page {arguments_validated.page}:"
+        result_str = (
+            f"Results for page {arguments_validated.page}/{ceil(no_results/PAGE_SIZE)}:"
+        )
 
         for res_no, page_dict in enumerate(page_dicts, start=1):
             document = page_dict["document"]

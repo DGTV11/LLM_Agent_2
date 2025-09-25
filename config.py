@@ -11,6 +11,9 @@ DEBUG_MODE = (
 
 CTX_WINDOW = int(getenv("CTX_WINDOW") or "8192")
 
+ARCHIVAL_STORAGE_MAX_NO_RESULTS = int(
+    getenv("ARCHIVAL_STORAGE_MAX_NO_RESULTS") or "100"
+)
 CHUNK_MAX_TOKENS = int(getenv("CHUNK_MAX_TOKENS") or "128")
 
 WARNING_TOK_FRAC = float(getenv("WARNING_TOK_FRAC") or "0.8")

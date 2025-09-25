@@ -12,6 +12,7 @@ from semantic_text_splitter import TextSplitter
 
 import db
 from config import (
+    ARCHIVAL_STORAGE_MAX_NO_RESULTS,
     CHUNK_MAX_TOKENS,
     CTX_WINDOW,
     FLUSH_MIN_FIFO_QUEUE_LEN,
@@ -308,11 +309,11 @@ class ArchivalStorage:
 
     def archival_search(
         self, query: str, offset: int, count: int, category: Optional[str]
-    ) -> List[Dict[str, Any]]:
+    ) -> Tuple[List[Dict[str, Any]], int]:
         query_res = self.collection.query(
             query_texts=[query],
             include=["documents", "metadatas"],
-            n_results=offset + count,
+            n_results=ARCHIVAL_STORAGE_MAX_NO_RESULTS,
             where=({"category": category} if category else None),
         )
 
@@ -324,7 +325,7 @@ class ArchivalStorage:
             for doc, meta in zip(documents, metadatas)
         ]
 
-        return results[offset : offset + count]
+        return results[offset : offset + count], len(results)
 
     def __repr__(self) -> str:
         return f"""
