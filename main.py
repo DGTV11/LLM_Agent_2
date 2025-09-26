@@ -290,24 +290,28 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 current_filename and current_tempfile
                             ), "No file upload in progress"
                             current_tempfile.write(received_data["bytes"])
-                    except WebSocketDisconnect:
+                    except Exception:
+                        print(f"Receiver error: {traceback.format_exc()}", flush=True)
+
+                        try:
+                            if websocket.application_state == WebSocketState.CONNECTED:
+                                await websocket.send_text(
+                                    AgentToParentMessage.model_validate(
+                                        {
+                                            "message_type": "error",
+                                            "payload": traceback.format_exc(),
+                                        }
+                                    ).model_dump_json()
+                                )
+                        except Exception:
+                            pass
+
                         await user_or_system_message_queue.put(
                             UserOrSystemMessage(
                                 message_type="system", message="__DISCONNECT__"
                             )
                         )
                         break
-                    except Exception:
-                        if websocket.application_state == WebSocketState.CONNECTED:
-                            await websocket.send_text(
-                                AgentToParentMessage.model_validate(
-                                    {
-                                        "message_type": "error",
-                                        "payload": traceback.format_exc(),
-                                    }
-                                ).model_dump_json()
-                            )
-                        print(f"Receiver error: {traceback.format_exc()}", flush=True)
 
             async def keepalive() -> None:
                 # nonlocal last_pong
