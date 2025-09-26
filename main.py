@@ -131,7 +131,7 @@ async def heartbeat_query(agent_id: str):
             )
 
             for _ in agent.call_agent(agent_id, False):
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0)
     finally:
         print("(Timed heartbeat) Setting next heartbeat job...", flush=True)
         scheduler.add_job(
@@ -147,7 +147,7 @@ async def heartbeat_query(agent_id: str):
 
 @app.websocket("/api/agents/{agent_id}/chat")
 async def chat(agent_id: str, websocket: WebSocket):
-    await websocket.accept(ping_interval=30, ping_timeout=60)
+    await websocket.accept()
     # last_pong = datetime.now()
     PING_INTERVAL = 15
     # PONG_TIMEOUT = 30
@@ -356,13 +356,15 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
 
-                        await asyncio.sleep(0.05)
+                        await asyncio.sleep(0)
                     except StopIteration:
+                        break
+                    except WebSocketDisconnect:
                         break
 
                 while not command_queue.empty():
                     _ = command_queue.get_nowait()
-        except Exception as e:
+        except Exception:
             print(
                 f"WebSocket error for {agent_id}: {traceback.format_exc()}", flush=True
             )
@@ -371,10 +373,16 @@ async def chat(agent_id: str, websocket: WebSocket):
             receive_task.cancel()
             keepalive_task.cancel()
             await asyncio.gather(receive_task, keepalive_task, return_exceptions=True)
-            if (
-                websocket.application_state != WebSocketState.DISCONNECTED
-            ):  # *Conversation exit event
-                await websocket.close()
+            try:
+                if (
+                    websocket.application_state != WebSocketState.DISCONNECTED
+                ):  # *Conversation exit event
+                    await websocket.close()
+            except Exception as e:
+                print(
+                    f"WebSocket error for {agent_id}: {traceback.format_exc()}",
+                    flush=True,
+                )
 
             print("Triggering agent heartbeat...", flush=True)
             send_message(
@@ -387,7 +395,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             )
 
             for _ in agent.call_agent(agent_id, False):
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0)
 
             print("Setting next heartbeat job...", flush=True)
             scheduler.add_job(
