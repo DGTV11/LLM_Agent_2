@@ -147,7 +147,7 @@ async def heartbeat_query(agent_id: str):
 
 @app.websocket("/api/agents/{agent_id}/chat")
 async def chat(agent_id: str, websocket: WebSocket):
-    await websocket.accept()
+    await websocket.accept(ping_interval=30, ping_timeout=60)
     # last_pong = datetime.now()
     PING_INTERVAL = 15
     # PONG_TIMEOUT = 30
