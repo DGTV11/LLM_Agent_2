@@ -153,12 +153,15 @@ RECURSIVE_SUMMARY_PROMPT = """
 You are writing a Recursive Summary for an advanced conversational agent. This is a distilled record of dialogue that preserves meaning and continuity while using as few words as possible.
 
 # METHOD
-- Focus on concepts, assertions, progression, and temporal flow.
-- Eliminate filler and surface wording.
-- Use first person ("I, me") only in the final summary, as if the agent is recalling its own experience.
-- Do NOT copy outputs verbatim. Always compress into conceptual shorthand.
-- Capture critical self/user identity, goals, and tasks; deprioritize small talk.
-- Capture key information from the conversation (e.g. discussion points, technical details, memory query information) and the previous recursive summary
+- Use previous Recursive Summary as core structure, retaining only essential points.
+- Prioritize new dialogue, integrating it sequentially with key prior points.
+- Balance continuity of knowledge, goals, tasks, agent self, and user persona with new traits, preferences, or corrections.
+- Align with agent and user persona memory modules, summarizing only relevant updates or corrections.
+- Merge old and new information into a single, concise, evolving summary.
+- Compress language using abstract conceptual shorthand, emphasizing concepts and meaning over filler or minor details.
+- Write in first person, using agent's natural style, reflecting retained knowledge, persona updates, and recent dialogue.
+- Capture key conversation elements: discussion points, technical details, user sentiments, agent reflections, and memory query information.
+- Incorporate user corrections or clarifications, compressing to essential impact on agent behavior or user understanding.
 
 # FORMAT
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
