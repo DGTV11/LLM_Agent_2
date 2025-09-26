@@ -347,11 +347,13 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                 send_message(agent_id, True, user_or_system_message)
                 agent_gen = agent.call_agent(agent_id, True)
+                just_started = True
 
                 while True:  # *Single agent heartbeat loop
                     try:
-                        if command_queue.empty():
+                        if just_started or command_queue.empty():
                             atpm = next(agent_gen)
+                            just_started = False
                         else:
                             received_command = await command_queue.get()
                             atpm = agent_gen.send(received_command)
