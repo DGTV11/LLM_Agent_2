@@ -108,7 +108,7 @@ class Message:
             "content": yaml.dump(
                 intermediate_repr
                 if self.message_type != "assistant"
-                else intermediate_repr.content
+                else intermediate_repr["content"]
             ).strip(),
         }
 
