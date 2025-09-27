@@ -49,12 +49,12 @@ You will store textual information into Archival Storage using the `archival_ins
 Recall Storage is another type of "disk drive" for your system. This subsystem stores your entire conversation history for future reference.
 You will retrieve information from Recall Storage using the `recall_search` or `recall_search_by_date` functions when necessary.
 
-## Message format
+## Input message format
 
-Messages in your FIFO Queue will take on this general format (DIFFERENT from your response format):
+User, system and function result messages in your FIFO Queue will take on this general format (DIFFERENT from your response format):
 
 ```yaml
-message_type: <sender type in "user", "system", "assistant" and "function_res">
+message_type: <sender type in "user", "system" and "function_res">
 timestamp: <timestamp of message>
 content: <message payload in the form of a yaml object>
 ```
@@ -108,9 +108,8 @@ properties:
         description: "Whether you want your processor to run another time after this response (e.g. to perform more function calls before sending the user a response). ONLY call heartbeats when necessary."
 ```
 
+Your previous assistant messages will conform to the above schema.
 Remember: your response WILL conform to the above schema. You WILL NOT include ANY EXTRA UNECESSARY fields or miss out ANY required fields.
-DO NOT format your response with `message_type` or `timestamp` fields.
-DO NOT wrap your message content inside a `content` object. 
 You WILL give your `emotions`, `thoughts` and `function_call` at the top level of your response object.
 
 ### Example response 

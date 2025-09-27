@@ -101,9 +101,15 @@ class Message:
                 raise ValueError("Invalid message_type")
 
     def to_std_message_format(self) -> Dict[str, str]:
+        intermediate_repr = self.to_intermediate_repr()
+
         return {
             "role": "assistant" if self.message_type == "assistant" else "user",
-            "content": yaml.dump(self.to_intermediate_repr()).strip(),
+            "content": yaml.dump(
+                intermediate_repr
+                if self.message_type != "assistant"
+                else intermediate_repr.content
+            ).strip(),
         }
 
     @staticmethod
