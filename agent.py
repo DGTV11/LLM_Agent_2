@@ -592,7 +592,7 @@ def call_agent(agent_id: str, in_convo: bool = True) -> Generator[
     try:
         while True:
             try:
-                while parent_conn.poll():
+                if parent_conn.poll():
                     msg = AgentToParentMessage.model_validate(
                         orjson.loads(parent_conn.recv())
                     ).root
@@ -603,6 +603,8 @@ def call_agent(agent_id: str, in_convo: bool = True) -> Generator[
 
                     if msg.message_type == "halt":
                         return
+                else:
+                    sleep(0.01)
             except EOFError:
                 break
     finally:

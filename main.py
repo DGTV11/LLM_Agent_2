@@ -131,7 +131,7 @@ async def heartbeat_query(agent_id: str):
             )
 
             for _ in agent.call_agent(agent_id, False):
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.01)
     finally:
         print("(Timed heartbeat) Setting next heartbeat job...", flush=True)
         scheduler.add_job(
@@ -362,7 +362,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                         if atpm:
                             await websocket.send_text(atpm.model_dump_json())
 
-                        await asyncio.sleep(0)
+                        await asyncio.sleep(0.01)
                     except StopIteration:
                         break
                     except WebSocketDisconnect:
@@ -401,7 +401,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             )
 
             for _ in agent.call_agent(agent_id, False):
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.01)
 
             print("Setting next heartbeat job...", flush=True)
             scheduler.add_job(
