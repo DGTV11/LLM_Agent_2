@@ -94,7 +94,9 @@ def extract_yaml(resp: str) -> Dict[str, Any]:
         resp_no_thoughts = re.sub(r"^<think>.*?</think>", "", resp, flags=re.DOTALL)
         yaml_str = resp_no_thoughts.strip()
 
-    return yaml.safe_load(yaml_str)
+    yaml_str_sanitised = re.sub(r"[\ud800-\udfff]", "", yaml_str)
+
+    return yaml.safe_load(yaml_str_sanitised)
 
 
 def llm_tokenise(messages: List[Dict[str, str]]) -> Union[List[int], Any]:

@@ -166,8 +166,10 @@ You are writing a Recursive Summary for an advanced conversational agent. This i
 # FORMAT
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
-analysis: detailed step-by-step analysis of the conversation history (ONE string, will be discarded)
-summary: new recursive summary (ONE string, final output to be used)
+analysis: | 
+    detailed step-by-step analysis of the conversation history (ONE string, will be discarded)
+summary: | 
+    new recursive summary (ONE string, final output to be used)
 ```
 """.strip()
 
