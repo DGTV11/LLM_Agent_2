@@ -86,13 +86,12 @@ def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
 
 
 def extract_yaml(resp: str) -> Dict[str, Any]:
-    match = re.search(r"```(?:ya?ml)?\s*([\s\S]*?)```", resp, re.IGNORECASE)
-    if match:
-        yaml_str = match.group(1).strip()
+    matches = list(re.finditer(r"```(?:ya?ml)?\s*([\s\S]*?)```", resp, re.IGNORECASE))
+    if matches:
+        yaml_str = matches[-1].group(1).strip()
     else:
-        # fallback: maybe whole response is YAML
-        resp_no_thoughts = re.sub(r"^<think>.*?</think>", "", resp, flags=re.DOTALL)
-        yaml_str = resp_no_thoughts.strip()
+        # Fallback: Remove only one leading <think> block
+        yaml_str = re.sub(r"^<think>.*?</think>", "", resp, flags=re.DOTALL).strip()
 
     yaml_str_sanitised = re.sub(r"[\ud800-\udfff]", "", yaml_str)
 
