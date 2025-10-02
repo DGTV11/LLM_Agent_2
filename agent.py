@@ -284,7 +284,7 @@ class ExitOrContinue(Node):
 
             do_heartbeat = True
 
-        elif conn.poll(0.25):
+        if conn.poll(0.25):
             match (conn.recv(), do_heartbeat):
                 case ("halt", True):
                     system_message = Message(
