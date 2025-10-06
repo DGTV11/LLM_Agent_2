@@ -187,11 +187,11 @@
       }
 
       var message = document.createElement("li");
-      var content = document.createTextNode(input.value);
+      // var content = document.createTextNode(input.value);
       message.className = "self-start bg-green-100 border-green-600 text-left max-w-[70%]";
 
       // message.appendChild(content);
-      message.innerHTML = marked.parse(content);
+      message.innerHTML = marked.parse(input.value);
       messages.appendChild(message);
       scrollToBottom(messages);
 
