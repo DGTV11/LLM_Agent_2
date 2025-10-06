@@ -190,9 +190,9 @@
       var content = document.createTextNode(input.value);
       message.className = "self-start bg-green-100 border-green-600 text-left max-w-[70%]";
 
-      message.appendChild(content);
-      // messages.appendChild(message);
-      message.innerHTML = marked.parse(message);
+      // message.appendChild(content);
+      message.innerHTML = marked.parse(content);
+      messages.appendChild(message);
       scrollToBottom(messages);
 
       consciousness_stream.innerHTML = '';
