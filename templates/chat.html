@@ -191,7 +191,8 @@
       message.className = "self-start bg-green-100 border-green-600 text-left max-w-[70%]";
 
       message.appendChild(content);
-      messages.appendChild(message);
+      // messages.appendChild(message);
+      message.innerHTML = marked.parse(message);
       scrollToBottom(messages);
 
       consciousness_stream.innerHTML = '';
