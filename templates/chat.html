@@ -194,7 +194,7 @@
       messages.appendChild(message);
       scrollToBottom(messages);
 
-      consciousness_stream.innerHTML = '';
+      // consciousness_stream.innerHTML = '';
 
       if (agentSending) {
         ws.send(JSON.stringify({
@@ -273,7 +273,7 @@
           uploadProgressContainer.classList.add('hidden');
       }
 
-      consciousness_stream.innerHTML = '';
+      // consciousness_stream.innerHTML = '';
       fileInput.value = "";
     });
 
