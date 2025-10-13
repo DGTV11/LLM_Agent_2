@@ -21,7 +21,7 @@
                                     data-url="/api/agents/{{ id }}">Delete</button>
                         </div>
                         <p class="text-sm text-gray-500">Created at {{ created_at }}</p>
-                        <p class="italic text-gray-700 whitespace-pre-wrap">"{{ agent_persona }}"</p>
+                        <p class="italic text-gray-700 whitespace-pre-wrap">{{ agent_persona }}</p>
                         <div class="mt-2">
                             {% for ofc in optional_function_sets %}
                                 <span class="text-xs bg-gray-200 rounded-full px-2 py-0.5">{{ ofc }}</span>
