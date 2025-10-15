@@ -101,15 +101,17 @@ class CallAgent(Node):
 
         result = extract_yaml(resp)
 
-        try:
-            result_validated = CallAgentResult.model_validate(result)
-        except ValidationError as e:
-            try:
-                result_validated = CallAgentResult.model_validate(
-                    result["content"]
-                )  # *Fallback: if the LLM decides to conform to the input schema instead of output schema
-            except Exception:
-                raise e
+        # try:
+        #     result_validated = CallAgentResult.model_validate(result)
+        # except ValidationError as e:
+        #     try:
+        #         result_validated = CallAgentResult.model_validate(
+        #             result["content"]
+        #         )  # *Fallback: if the LLM decides to conform to the input schema instead of output schema
+        #    except Exception:
+        #         raise e
+        
+        result_validated = CallAgentResult.model_validate(result)
 
         return result_validated
 
