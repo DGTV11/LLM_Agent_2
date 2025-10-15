@@ -6,6 +6,8 @@ ADD . /app
 
 WORKDIR /app
 
+ENV UV_HTTP_TIMEOUT=120
+
 RUN uv sync --locked --compile-bytecode
 
 RUN chmod +x entrypoint.sh
