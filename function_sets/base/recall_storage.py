@@ -21,7 +21,7 @@ class RecallSearchValidator(BaseModel):
     )
     page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number or tweak query and try again.",
+        description="Result list page number.",
     )
 
     model_config = {"title": "recall_search"}
@@ -71,7 +71,7 @@ class RecallSearchByDateValidator(BaseModel):
     )
     page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Recall Storage but are certain it's there, increment page number or tweak date range and try again.",
+        description="Result list page number.",
     )
 
     model_config = {"title": "recall_search_by_date"}
