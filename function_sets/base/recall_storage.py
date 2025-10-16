@@ -14,7 +14,7 @@ from memory import FunctionResultContent, Memory, Message
 
 # *recall_search
 class RecallSearchValidator(BaseModel):
-    """Searches Recall Storage by text (exact case-insensitive match)."""
+    """Searches Recall Storage by text (exact match)."""
 
     query: str = Field(
         description="Search query. Exact match (case-insensitive) required for result to show up."
