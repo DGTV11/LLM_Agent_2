@@ -58,7 +58,7 @@ class ArchivalSearchValidator(BaseModel):
     )
     page: Optional[NonNegativeInt] = Field(
         default=0,
-        description="Result list page number. Defaults to 0 and must be non-negative. If you haven't found the target information from Archival Storage but are certain it's there, increment page number and try again.",
+        description="Result list page number.",
     )
     category: Optional[str] = Field(
         description="Category of information to limit search to."
