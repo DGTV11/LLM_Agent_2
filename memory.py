@@ -181,7 +181,7 @@ class WorkingContext:
         new_persona_length = len(value.split())
         if new_persona_length > PERSONA_MAX_WORDS:
             raise ValueError(
-                f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
+                f"New persona too long (maximum length {PERSONA_MAX_WORDS} words, requested length {new_persona_length} words)"
             )
 
         db.write(
@@ -204,7 +204,7 @@ class WorkingContext:
         new_persona_length = len(value.split())
         if new_persona_length > PERSONA_MAX_WORDS:
             raise ValueError(
-                f"New persona too long (maximum length {PERSONA_MAX_WORDS}, requested length {new_persona_length})"
+                f"New persona too long (maximum length {PERSONA_MAX_WORDS} words, requested length {new_persona_length} words)"
             )
 
         db.write(
