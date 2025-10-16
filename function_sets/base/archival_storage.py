@@ -19,7 +19,7 @@ class ArchivalInsertValidator(BaseModel):
         description="Text to be inserted into archival storage. To be formatted such that it can be easily queried through vector search."
     )
     category: str = Field(
-        description="Category of information presented in the given text. Keep the number of categories low (so as not to make the categories too fine-grained) but not too low (to avoid overgeneralising the stored info)."
+        description="Category of information presented in the given text. Keep the number of categories low (so as not to make the categories too fine-grained or redundant) but not too low (to avoid overgeneralising the stored info)."
     )
 
     model_config = {"title": "archival_insert"}
