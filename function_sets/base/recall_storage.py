@@ -16,7 +16,7 @@ from memory import FunctionResultContent, Memory, Message
 class RecallSearchValidator(BaseModel):
     """Searches Recall Storage by text (exact match)."""
 
-    query_text: str = Field(
+    query: str = Field(
         description="Search query. Exact match (case-insensitive) required for result to show up."
     )
     page: Optional[NonNegativeInt] = Field(
@@ -37,7 +37,7 @@ class RecallSearch(FunctionNode):
         conn: Connection,
         arguments_validated: RecallSearchValidator,
     ) -> Message:
-        messages = memory.recall_storage.text_search(arguments_validated.query_text)
+        messages = memory.recall_storage.text_search(arguments_validated.query)
 
         result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)}:"
         offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
