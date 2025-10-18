@@ -441,7 +441,9 @@ def create_agent_using_raw_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(
+        f"/chat/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
 @app.post("/create/generated-agent-persona")
@@ -456,7 +458,9 @@ def create_agent_using_generated_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(f"/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(
+        f"/chat/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
 @app.get("/create")
