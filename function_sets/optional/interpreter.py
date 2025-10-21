@@ -30,8 +30,7 @@ class ExecutePython(FunctionNode):
         arguments_validated: ExecutePythonValidator,
     ) -> Message:
         with SandboxSession(
-            backend=SandboxBackend.DOCKER,
-            lang="python",
+            backend=SandboxBackend.DOCKER, lang="python", reuse_container=False
         ) as session:
             result = session.run(arguments_validated.program)
 
