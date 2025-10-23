@@ -785,7 +785,7 @@ requires-dist = [
     { name = "chromadb", specifier = ">=1.0.20" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "llm-sandbox", extras = ["docker"], specifier = ">=0.3.18" },
+    { name = "llm-sandbox", extras = ["docker"], specifier = ">=0.3.23" },
     { name = "mypy", specifier = ">=1.17.1" },
     { name = "openai", specifier = ">=1.99.9" },
     { name = "orjson", specifier = ">=3.11.2" },
@@ -810,14 +810,14 @@ requires-dist = [
 
 [[package]]
 name = "llm-sandbox"
-version = "0.3.18"
+version = "0.3.23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9e/01/64c1aa4e1ea07c424f737d8698bc045e295beff5eee0003a4aa8165df969/llm_sandbox-0.3.18.tar.gz", hash = "sha256:9e7788e597572e8c9b485d128599ca9507d666fb235ff3d86c2b480ba43a5aaf", size = 479207, upload-time = "2025-08-23T07:53:09.873Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/68/395f8a0aa5cc0cab73b8cb08c3a4531d834068e9c385f4f53fac41414ace/llm_sandbox-0.3.23.tar.gz", hash = "sha256:0062ac66b73c777a24958fbd03a3d4fc321d147cdb39e73214881012d8bd6b5f", size = 495511, upload-time = "2025-10-21T04:37:55.684Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/1b/2d47504e886a994ef8473c5753639a3c98dedb5c08bdf3926c904bc58727/llm_sandbox-0.3.18-py3-none-any.whl", hash = "sha256:3de9c82acd241f8e135d12b695baacc471becf6a81d86c6e58f95d4949770821", size = 67575, upload-time = "2025-08-23T07:53:08.883Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/fc/b8dc6099cf411c16f3f19ad0c6e6618e2b2b374640bc34f568dd4cd4fe39/llm_sandbox-0.3.23-py3-none-any.whl", hash = "sha256:08a9b61075d36bfa3258c779012bc852d9a27b40d5cab604acd7d57ca0e94cba", size = 69825, upload-time = "2025-10-21T04:37:54.4Z" },
 ]
 
 [package.optional-dependencies]
