@@ -12,7 +12,7 @@ from memory import FunctionResultContent, Memory, Message
 
 # *execute_python
 class ExecutePythonValidator(BaseModel):
-    """Executes a Python program in a sandbox (maximum execution time before timeout: 30s). Use this when you need to run computations requiring accuracy or mathematical calculations. Stdout returned."""
+    """Executes a Python 3.12 program in a sandbox (maximum execution time: 30s). Use this when you need to run computations requiring accuracy or mathematical calculations. Stdout and stderr returned."""
 
     program: str = Field(description="Python program to be run in the sandbox.")
 
@@ -30,23 +30,27 @@ class ExecutePython(FunctionNode):
         arguments_validated: ExecutePythonValidator,
     ) -> Message:
         with SandboxSession(
-            backend=SandboxBackend.DOCKER, lang="python", reuse_container=False
+            backend=SandboxBackend.DOCKER,
+            lang="python",
+            image="python:3.12-slim",
+            reuse_container=False,
+            execution_timeout=30,
         ) as session:
             result = session.run(arguments_validated.program)
 
-            return Message(
-                message_type="function_res",
-                timestamp=datetime.now(),
-                content=FunctionResultContent(
-                    success=bool(result.exit_code),
-                    result="\n\n".join(
-                        [
-                            f"stdout: {result.stdout}",
-                            f"stderr: {result.stderr}",
-                        ]
-                    ),
+        return Message(
+            message_type="function_res",
+            timestamp=datetime.now(),
+            content=FunctionResultContent(
+                success=bool(result.exit_code),
+                result="\n\n".join(
+                    [
+                        f"stdout: {result.stdout}",
+                        f"stderr: {result.stderr}",
+                    ]
                 ),
-            )
+            ),
+        )
 
 
 FUNCTION_NODES = [ExecutePython()]
