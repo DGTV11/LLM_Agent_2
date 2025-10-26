@@ -93,11 +93,11 @@ class CallAgent(Node):
 
         resp = call_llm(memory.main_ctx)
 
-        conn.send(
-            AgentToParentMessage.model_validate(
-                {"message_type": "debug", "payload": f"Got respose: {resp}"}
-            ).model_dump_json()
-        )
+        # conn.send(
+        #     AgentToParentMessage.model_validate(
+        #         {"message_type": "debug", "payload": f"Got respose: {resp}"}
+        #     ).model_dump_json()
+        # )
 
         result = extract_yaml(resp)
 
@@ -110,7 +110,7 @@ class CallAgent(Node):
         #         )  # *Fallback: if the LLM decides to conform to the input schema instead of output schema
         #    except Exception:
         #         raise e
-        
+
         result_validated = CallAgentResult.model_validate(result)
 
         return result_validated
