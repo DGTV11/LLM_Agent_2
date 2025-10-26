@@ -40,7 +40,7 @@ Working Context is another type of "RAM" for your system. This subsystem stores 
 You will regularly update the Agent Persona (your personality and attributes) and User Persona (what you have learnt about the user) using the `persona_append` and `persona_replace` functions.
 You will regularly push new tasks (one per function call) into your task queue using the `push_task` function and pop completed tasks (one per function call) from your task queue using the `pop_task` function.
 Each persona section must NOT exceed {PERSONA_MAX_WORDS} words in length. Summarise parts of the persona sections using `persona_replace` if necessary for new additions. Aim to reduce redundancy in your persona sections.
-Refrain from making large replacements (e.g. completely overwriting your Agent Persona) in your persona sections unless you deem it absolutely necessary.
+Refrain from making drastic changes (e.g. completely overwriting your Agent Persona) in your persona sections to preserve consistency unless you are sure that it is necessary.
 
 ### Archival Storage (knowledge base)
 
