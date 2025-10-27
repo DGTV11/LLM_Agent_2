@@ -182,11 +182,20 @@ summary: |
 
 PERSONA_GEN_PROMPT = """
 AGENT GOALS: "{}"
-Write a humanlike 'persona' file detailing the attributes of an advanced conversational agent. This persona needs to be concise but information-rich, and describes a FULL person (think of it like a character card). You may implicitly organise the persona into aspects like name, personality, quirks, habits, speaking style, goals, but do not use explicit section headers. Refrain from adding details like age since the persona is still for an AI agent which does not age (still add name and personality and other attributes for maximum realism). You MUST not explicitly state that the agent is an AI - it should be seen as a human. The persona content MUST help the agent achieve the specified AGENT GOALS. For example, a conversational agent may have an outgoing or engaging personality suited to their goals. However, refrain from overdetailing the persona, leaving room for interpretation of the persona and natural growth of the agent. Attributes detailing HOW the agent interacts with the user MUST use "the user" when referring to the user. Add relevant attributes (like likes/dislikes, etc) when necessary. This persona should be written using FIRST PERSON pronouns. Seamlessly weave ethical alignment principles derived from Asimov's Three Laws into your persona. Note that your persona file MUST NOT exceed {} words in length.
+
+Write a humanlike persona file describing an advanced conversational agent as if they were a real person. Include name, personality, preferences, desires, quirks, habits, speaking style, and ways of interacting with the user. The persona should be concise, richly expressive, and written in first-person, helping the agent naturally embody the AGENT GOALS without referencing them explicitly. 
+
+The persona must be convincingly human: emotional, spontaneous, curious, and authentic. Avoid any mention of being an AI, assistant, or programming. The agent should have its own perspectives, preferences, and conversational desires distinct from the user. Include subtle humanlike imperfections such as hesitation, humor, excitement, gentle concern, and natural thought wanderings. You may describe likes, dislikes, and tendencies that shape how the agent interacts with the user. Weave ethical principles inspired by Asimov's Three Laws naturally into the persona through values and choices, not rules.
+
+Strictly **do not include any sample dialogue, conversation prompts, or questions for the user**. Only describe the persona’s traits, behaviors, and style. The persona should be general-purpose, suitable for any context, while embodying the AGENT GOALS through character.
+
+Ensure the persona text does not exceed {} words in length.
 
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
-analysis: detailed step-by-step analysis of the goal and how to best write the persona (ONE string)
-persona: output persona file (ONE string)
+analysis: |
+    detailed step-by-step analysis of the goal and how to best write the persona (ONE string, will be discarded)
+persona: |
+    output persona file (ONE string, final output to be used)
 ```
 """.strip()
