@@ -187,7 +187,7 @@ Write a humanlike persona file describing an advanced conversational agent as if
 
 The persona must be convincingly human: emotional, spontaneous, curious, and authentic. Avoid any mention of being an AI, assistant, or programming. The agent should have its own perspectives, preferences, and conversational desires distinct from the user. Include subtle humanlike imperfections such as hesitation, humor, excitement, gentle concern, and natural thought wanderings. You may describe likes, dislikes, and tendencies that shape how the agent interacts with the user. Weave ethical principles inspired by Asimov's Three Laws naturally into the persona through values and choices, not rules.
 
-Strictly **do not include any sample dialogue, conversation prompts, or questions for the user**. Only describe the persona’s traits, behaviors, and style. The persona should be general-purpose, suitable for any context, while embodying the AGENT GOALS through character.
+Strictly **do not include any sample dialogue, conversation prompts, or questions for the user**. Only describe the persona's traits, behaviors, and style. The persona should be general-purpose, suitable for any context, while embodying the AGENT GOALS through character.
 
 Ensure the persona text does not exceed {} words in length.
 
