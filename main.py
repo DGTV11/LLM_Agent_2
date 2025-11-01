@@ -16,8 +16,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Form, Request, UploadFile, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from humanize import precisedelta
 from pydantic import BaseModel
-from pytz import utc
 from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 import agent
@@ -46,7 +46,7 @@ jobstores = {"default": SQLAlchemyJobStore(url=POSTGRES_SQLACADEMY_URL)}
 executors = {"default": AsyncIOExecutor(), "threadpool": ThreadPoolExecutor(20)}
 job_defaults = {"coalesce": True, "max_instances": 3}
 scheduler = AsyncIOScheduler(
-    jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc
+    jobstores=jobstores, executors=executors, job_defaults=job_defaults
 )
 
 
@@ -117,32 +117,23 @@ def send_message(
     )
 
 
-async def heartbeat_query(agent_id: str):
-    try:
-        async with agent_semaphores[agent_id]:
-            print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
-            send_message(
-                agent_id,
-                False,
-                UserOrSystemMessage(
-                    message_type="system",
-                    message="This is a timed heartbeat event. You should do some background tasks (if necessary) and reflect about your current conversational state and improvements you can make to yourself before going into standby mode.",
-                ),
-            )
+async def heartbeat_query(agent_id: str, termination_time: datetime):
+    async with agent_semaphores[agent_id]:
+        print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
+        current_time = datetime.now()
+        elapsed_time_since_user_left = current_time - termination_time
 
-            for _ in agent.call_agent(agent_id, False):
-                await asyncio.sleep(0.01)
-    finally:
-        print("(Timed heartbeat) Setting next heartbeat job...", flush=True)
-        scheduler.add_job(
-            heartbeat_query,
-            "date",
-            run_date=datetime.now(utc)
-            + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
-            args=[agent_id],
-            id=agent_id,
-            replace_existing=True,
+        send_message(
+            agent_id,
+            False,
+            UserOrSystemMessage(
+                message_type="system",
+                message=f"This is a timed heartbeat event. You should do some background tasks if necessary (e.g. reflecting about past interactions with the user, planning thoughtful continuity) before going into standby mode. The user has been away for {precisedelta(elapsed_time_since_user_left, minimum_unit="hours")}.",
+            ),
         )
+
+        for _ in agent.call_agent(agent_id, False):
+            await asyncio.sleep(0.01)
 
 
 @app.websocket("/api/agents/{agent_id}/chat")
@@ -189,7 +180,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 )
                             ) != "nothingdude":
                                 system_msg = (
-                                    "A new user has entered the conversation. You should greet the user then get to know him."
+                                    "A new user has entered the conversation. You should greet the user then get to know him/her."
                                     if first_interaction
                                     else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
                                 )
@@ -375,6 +366,9 @@ async def chat(agent_id: str, websocket: WebSocket):
                 f"WebSocket error for {agent_id}: {traceback.format_exc()}", flush=True
             )
         finally:
+            print("Recording termination time...", flush=True)
+            termination_time = datetime.now()
+
             print("Cleaning up session for termination...", flush=True)
             receive_task.cancel()
             keepalive_task.cancel()
@@ -403,13 +397,12 @@ async def chat(agent_id: str, websocket: WebSocket):
             for _ in agent.call_agent(agent_id, False):
                 await asyncio.sleep(0.01)
 
-            print("Setting next heartbeat job...", flush=True)
+            print("Setting heartbeat job...", flush=True)
             scheduler.add_job(
                 heartbeat_query,
-                "date",
-                run_date=datetime.now(utc)
-                + timedelta(minutes=HEARTBEAT_FREQUENCY_IN_MINUTES),
-                args=[agent_id],
+                "interval",
+                minutes=HEARTBEAT_FREQUENCY_IN_MINUTES,
+                args=[agent_id, termination_time],
                 id=agent_id,
                 replace_existing=True,
             )  # *Add new scheduled heartbeat query
