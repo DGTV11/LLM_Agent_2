@@ -120,8 +120,7 @@ def send_message(
 async def heartbeat_query(agent_id: str, termination_time: datetime):
     async with agent_semaphores[agent_id]:
         print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
-        current_time = datetime.now()
-        elapsed_time_since_user_left = current_time - termination_time
+        elapsed_time_since_user_left = datetime.now() - termination_time
 
         send_message(
             agent_id,
