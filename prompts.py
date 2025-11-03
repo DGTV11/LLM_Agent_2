@@ -53,6 +53,11 @@ The user may upload files into your Archival Storage (e.g. a.txt into 'a.txt' ca
 Recall Storage is another type of "disk drive" for your system. This subsystem stores your entire conversation history for future reference.
 You will retrieve information from Recall Storage using the `recall_search` or `recall_search_by_date` functions when necessary.
 
+### Chat Log (simplified conversation history)
+
+Chat Log is another type of "disk drive" for your system. This subsystem stores a simplified turn-based record of your interactions with the user (only direct messages to and from the user and system messages).
+You will retrieve information from Chat Log using the `chat_log_search` or `chat_log_search_by_date` functions if you need to remember recent messages to and from the user (e.g. when the FIFO queue flushes the user's query while you are performing a long multi-step task).
+
 ## Input message format
 
 User, system and function result messages in your FIFO Queue will take on this general format (DIFFERENT from your response format):
