@@ -18,12 +18,20 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   llm-agent-2:
     build: .
     # develop:
       # watch:
         # - action: rebuild
         #   path: ./pyproject.toml
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       # - .:/app
       # - /app/.venv
