@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from os import path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import yaml
 from pocketflow import Node
@@ -160,6 +160,13 @@ class Message:
                 )
             case _:
                 raise ValueError("Invalid message_type")
+
+
+@dataclass
+class ChatLogMessage:
+    message_type: Literal["user", "system", "assistant"]
+    timestamp: datetime
+    content: str
 
 
 # * Memory modules
@@ -370,7 +377,7 @@ class RecallStorage:
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.read(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content::text ILIKE %s",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content::text ILIKE %s ORDER BY timestamp DESC",
             (self.agent_id, f"%{query_text}%"),
         ):
             message_dict = {
@@ -388,7 +395,7 @@ class RecallStorage:
     ) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.read(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s ORDER BY timestamp ASC",
             (self.agent_id, start_timestamp, end_timestamp),
         ):
             message_dict = {
@@ -398,6 +405,64 @@ class RecallStorage:
             }
 
             message_list.append(Message.from_intermediate_repr(message_dict))
+
+        return message_list
+
+
+@dataclass
+class ChatLog:
+    agent_id: str
+
+    def __len__(self) -> int:
+        return db.read(
+            "SELECT COUNT(*) FROM chat_log WHERE agent_id = %s",
+            (self.agent_id,),
+        )[0][0]
+
+    def push_message(self, message: ChatLogMessage) -> None:
+        db.write(
+            """
+            INSERT INTO chat_log (id, agent_id, message_type, timestamp, content)
+            VALUES (%s, %s, %s, %s, %s);
+            """,
+            (
+                uuid4(),
+                self.agent_id,
+                message.message_type,
+                message.timestamp,
+                message.content,
+            ),
+        )
+
+    def recent_search(
+        self, query_text: Optional[str] = None, limit: int = 50
+    ) -> List[ChatLogMessage]:
+        if query_text:
+            rows = db.read(
+                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content ILIKE %s ORDER BY timestamp DESC LIMIT %s",
+                (self.agent_id, f"%{query_text}%", limit),
+            )
+        else:
+            rows = db.read(
+                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') ORDER BY timestamp DESC LIMIT %s",
+                (self.agent_id, limit),
+            )
+
+        return [ChatLogMessage(*row) for row in rows]
+
+    def date_search(
+        self, start_timestamp: datetime, end_timestamp: datetime
+    ) -> List[ChatLogMessage]:
+        message_list = []
+        for message_type, timestamp, content in db.read(
+            "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s ORDER BY timestamp ASC",
+            (self.agent_id, start_timestamp, end_timestamp),
+        ):
+            message_list.append(
+                ChatLogMessage(
+                    message_type=message_type, timestamp=timestamp, content=content
+                )
+            )
 
         return message_list
 
@@ -527,6 +592,7 @@ class Memory:
     working_context: WorkingContext
     archival_storage: ArchivalStorage
     recall_storage: RecallStorage
+    chat_log: ChatLog
     function_sets: FunctionSets
     fifo_queue: FIFOQueue
     agent_id: str
@@ -544,10 +610,11 @@ class Memory:
 
 {self.archival_storage}
 
-## Recall Storage
+## Conversational Memory
 
 {len(self.fifo_queue)} messages in FIFO Queue
 {len(self.recall_storage)} messages in Recall Storage ({len(self.recall_storage) - len(self.fifo_queue)} previous messages evicted from FIFO Queue)
+{len(self.chat_log)} messages in Chat Log
 
 # Function Schemas
 

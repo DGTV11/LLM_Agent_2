@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 import agent
+import db
 import doc_upload
 import persona_gen
 from communication import (
@@ -67,7 +68,7 @@ def list_optional_function_sets():
     return agent.list_optional_function_sets()
 
 
-@app.get("/api/agents")
+@app.get("/api/agents")  # TODO: return json obj instead
 def get_agents():
     return agent.get_agents()
 
@@ -117,17 +118,23 @@ def send_message(
     )
 
 
-async def heartbeat_query(agent_id: str, termination_time: datetime):
+async def heartbeat_query(agent_id: str):
     async with agent_semaphores[agent_id]:
         print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
-        elapsed_time_since_user_left = datetime.now() - termination_time
+
+        user_exit_time = db.read(
+            "SELECT user_exit_time FROM agents WHERE agent_id = %s;",
+            (agent_id,),
+        )[0][0]
+
+        elapsed_time_since_user_left = datetime.now() - user_exit_time
 
         send_message(
             agent_id,
             False,
             UserOrSystemMessage(
                 message_type="system",
-                message=f"This is a timed heartbeat event. You should do some background tasks if necessary (e.g. reflecting about past interactions with the user, planning thoughtful continuity) before going into standby mode. The user has been away for {precisedelta(elapsed_time_since_user_left, minimum_unit="hours")}.",
+                message=f"This is a timed heartbeat event. You should do some background tasks if necessary (e.g. reflecting about past interactions, planning for the next interaction with the user) before going into standby mode. The user has been away for {precisedelta(elapsed_time_since_user_left, minimum_unit="hours")}.",
             ),
         )
 
@@ -173,14 +180,18 @@ async def chat(agent_id: str, websocket: WebSocket):
 
                             json_data = orjson.loads(received_data["text"])
 
-                            if (
-                                first_interaction := json_data.get(
-                                    "first_interaction", "nothingdude"
+                            if begin_interaction := json_data.get("begin_interaction"):
+                                is_first_interaction = (
+                                    db.read(
+                                        "SELECT user_exit_time FROM agents WHERE agent_id = %s;",
+                                        (agent_id,),
+                                    )[0][0]
+                                    is None
                                 )
-                            ) != "nothingdude":
+
                                 system_msg = (
                                     "A new user has entered the conversation. You should greet the user then get to know him/her."
-                                    if first_interaction
+                                    if is_first_interaction
                                     else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
                                 )
                                 await user_or_system_message_queue.put(
@@ -366,7 +377,14 @@ async def chat(agent_id: str, websocket: WebSocket):
             )
         finally:
             print("Recording termination time...", flush=True)
-            termination_time = datetime.now()
+
+            db.write(
+                "UPDATE agents SET user_exit_time = %s WHERE agent_id = %s;",
+                (
+                    datetime.now(),
+                    agent_id,
+                ),
+            )
 
             print("Cleaning up session for termination...", flush=True)
             receive_task.cancel()
@@ -401,7 +419,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                 heartbeat_query,
                 "interval",
                 minutes=HEARTBEAT_FREQUENCY_IN_MINUTES,
-                args=[agent_id, termination_time],
+                args=[agent_id],
                 id=agent_id,
                 replace_existing=True,
             )  # *Add new scheduled heartbeat query
@@ -433,9 +451,7 @@ def create_agent_using_raw_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(
-        f"/chat/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER
-    )
+    return RedirectResponse(f"/chat/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.post("/create/generated-agent-persona")
@@ -450,9 +466,7 @@ def create_agent_using_generated_agent_persona(
         user_persona,
     )
 
-    return RedirectResponse(
-        f"/chat/{agent_id}?fi=y", status_code=status.HTTP_303_SEE_OTHER
-    )
+    return RedirectResponse(f"/chat/{agent_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.get("/create")

@@ -46,6 +46,7 @@ from llm import call_llm, extract_yaml, llm_tokenise
 from memory import (
     ArchivalStorage,
     AssistantMessageContent,
+    ChatLog,
     FIFOQueue,
     FunctionResultContent,
     Memory,
@@ -313,7 +314,7 @@ class ExitOrContinue(Node):
                         message_type="system",
                         timestamp=datetime.now(),
                         content=TextContent(
-                            message=f"The user has requested that you finish up whatever you are doing soon. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have, but hurry up as the user has the option to forcefully halt your AI."
+                            message=f"The user has requested that you finish up whatever you are doing soon. You should double-check whether you have gathered sufficient information to accurately answer the user's query or finish your background tasks. If you have, please send a final message to the user or finish up your tasks and then set your 'do_heartbeat' field to false. If you have not, please carry on until you have, but hurry up as the user may forcefully halt your AI."
                         ),
                     )
                     memory.push_message(system_message)
@@ -389,6 +390,7 @@ def get_memory_object(agent_id: str, in_convo: bool):
         working_context=WorkingContext(agent_id=agent_id),
         archival_storage=ArchivalStorage(agent_id=agent_id),
         recall_storage=RecallStorage(agent_id=agent_id),
+        chat_log=ChatLog(agent_id=agent_id),
         function_sets=FunctionSets(agent_id=agent_id),
         fifo_queue=FIFOQueue(agent_id=agent_id),
         agent_id=agent_id,
@@ -505,6 +507,7 @@ def delete_agent(agent_id: str) -> None:
     db.write("DELETE FROM agents WHERE id = %s;", (agent_id,))
     db.write("DELETE FROM working_context WHERE agent_id = %s;", (agent_id,))
     db.write("DELETE FROM recall_storage WHERE agent_id = %s;", (agent_id,))
+    db.write("DELETE FROM chat_log WHERE agent_id = %s;", (agent_id,))
     db.write("DELETE FROM fifo_queue WHERE agent_id = %s;", (agent_id,))
 
     db.create_chromadb_client().delete_collection(agent_id)

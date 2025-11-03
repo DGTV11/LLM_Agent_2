@@ -50,6 +50,10 @@ def orjson_dumps_str(*args) -> str:
 set_json_dumps(orjson_dumps_str)
 set_json_loads(orjson.loads)
 
+write(
+    "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+)
+
 ## *Agents
 write(
     """
@@ -57,6 +61,7 @@ write(
         id UUID PRIMARY KEY NOT NULL,
         optional_function_sets TEXT[] NOT NULL, 
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        user_exit_time TIMESTAMP DEFAULT NULL,
         recursive_summary TEXT DEFAULT 'No content in recursive summary yet',
         recursive_summary_update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -93,6 +98,21 @@ write(
     """,
 )
 
+## *Chat Log
+
+write(
+    """
+    CREATE TABLE IF NOT EXISTS chat_log (
+        id UUID PRIMARY KEY NOT NULL,
+        agent_id UUID NOT NULL,
+        message_type TEXT NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
+        content TEXT NOT NULL, 
+        FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+    );
+    """,
+)
+
 ## *FIFO Queue
 
 write(
@@ -106,4 +126,30 @@ write(
         FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
     );
     """,
+)
+
+## *Indexes
+
+write(
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_working_context_agent_id ON working_context(agent_id);",
+)
+
+write(
+    "CREATE INDEX IF NOT EXISTS idx_recall_agent_timestamp ON recall_storage(agent_id, timestamp);",
+)
+
+write(
+    "CREATE INDEX IF NOT EXISTS idx_recall_content_trgm ON recall_storage USING gin (content gin_trgm_ops);",
+)
+
+write(
+    "CREATE INDEX IF NOT EXISTS idx_chat_log_agent_timestamp ON chat_log(agent_id, timestamp DESC);",
+)
+
+write(
+    "CREATE INDEX IF NOT EXISTS idx_chat_log_content_trgm ON chat_log USING gin (content gin_trgm_ops);",
+)
+
+write(
+    "CREATE INDEX IF NOT EXISTS idx_fifo_agent_timestamp ON fifo_queue(agent_id, timestamp ASC);",
 )

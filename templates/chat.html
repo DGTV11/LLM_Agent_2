@@ -102,13 +102,10 @@
     }
 
     ws.onopen = function () {
-      const params = new URLSearchParams(window.location.search);
-      const firstInteraction = Boolean(params.get("fi"));
-
       setSendingState();
 
       ws.send(JSON.stringify({
-        first_interaction: firstInteraction
+        begin_interaction: true
       }));
     };
 
