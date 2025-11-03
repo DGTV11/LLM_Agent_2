@@ -59,15 +59,25 @@ class SendMessage(FunctionNode):
     ) -> Message:
 
         if memory.in_convo:
+            msg_timestamp = datetime.now()
+
             conn.send(
                 AgentToParentMessage(
                     message_type="to_user", payload=arguments_validated.message
                 ).model_dump_json()
             )
 
+            memory.chat_log.push_message(
+                ChatLogMessage(
+                    message_type="agent",
+                    timestamp=msg_timestamp,
+                    content=arguments_validated.message,
+                )
+            )
+
             return Message(
                 message_type="function_res",
-                timestamp=datetime.now(),
+                timestamp=msg_timestamp,
                 content=FunctionResultContent(
                     success=True,
                     result=f"Successfully sent message",

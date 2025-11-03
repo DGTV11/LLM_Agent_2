@@ -181,18 +181,17 @@ async def chat(agent_id: str, websocket: WebSocket):
                             json_data = orjson.loads(received_data["text"])
 
                             if begin_interaction := json_data.get("begin_interaction"):
-                                is_first_interaction = (
-                                    db.read(
-                                        "SELECT user_exit_time FROM agents WHERE id = %s;",
-                                        (agent_id,),
-                                    )[0][0]
-                                    is None
-                                )
+                                user_exit_time = db.read(
+                                    "SELECT user_exit_time FROM agents WHERE id = %s;",
+                                    (agent_id,),
+                                )[0][0]
+
+                                is_first_interaction = user_exit_time is None
 
                                 system_msg = (
                                     "A new user has entered the conversation. You should greet the user then get to know him/her."
                                     if is_first_interaction
-                                    else "The user has re-entered the conversation. You should greet the user then carry on where you have left off."
+                                    else f"The user has re-entered the conversation after {precisedelta(datetime.now() - user_exit_time, minimum_unit="hours")}. You should greet the user then carry on where you have left off."
                                 )
                                 await user_or_system_message_queue.put(
                                     UserOrSystemMessage(

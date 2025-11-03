@@ -685,6 +685,15 @@ class Memory:
         self.fifo_queue.push_message(message)
         self.recall_storage.push_message(message)
 
+        if self.in_convo and message.message_type in ["user", "system"]:
+            self.chat_log.push_message(
+                ChatLogMessage(
+                    message_type=message.message_type,
+                    timestamp=message.timestamp,
+                    content=message.content.message,
+                )
+            )
+
     def flush_fifo_queue(self, tgt_token_frac: float) -> None:
         rs, rsut = self.recursive_summary_and_summary_timestamp
 
