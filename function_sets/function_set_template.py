@@ -13,7 +13,7 @@ from memory import FunctionResultContent, Memory, Message
 class ExampleFuncValidator(BaseModel):
     """Example function description."""
 
-    pass
+    model_config = {"title": "example_func"}
 
 
 class ExampleFunc(FunctionNode):
