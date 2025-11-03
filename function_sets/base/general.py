@@ -69,7 +69,7 @@ class SendMessage(FunctionNode):
 
             memory.chat_log.push_message(
                 ChatLogMessage(
-                    message_type="agent",
+                    message_type="assistant",
                     timestamp=msg_timestamp,
                     content=arguments_validated.message,
                 )

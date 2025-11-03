@@ -377,7 +377,7 @@ class RecallStorage:
     def text_search(self, query_text: str) -> List[Message]:
         message_list = []
         for message_type, timestamp, content in db.read(
-            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content::text ILIKE %s ORDER BY timestamp DESC",
+            "SELECT message_type, timestamp, content FROM recall_storage WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content::text ILIKE %s ORDER BY timestamp ASC",
             (self.agent_id, f"%{query_text}%"),
         ):
             message_dict = {
@@ -439,12 +439,12 @@ class ChatLog:
     ) -> List[ChatLogMessage]:
         if query_text:
             rows = db.read(
-                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND content ILIKE %s ORDER BY timestamp DESC LIMIT %s",
+                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant' OR message_type = 'system') AND content ILIKE %s ORDER BY timestamp ASC LIMIT %s",
                 (self.agent_id, f"%{query_text}%", limit),
             )
         else:
             rows = db.read(
-                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') ORDER BY timestamp DESC LIMIT %s",
+                "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant' OR message_type = 'system') ORDER BY timestamp ASC LIMIT %s",
                 (self.agent_id, limit),
             )
 
@@ -455,7 +455,7 @@ class ChatLog:
     ) -> List[ChatLogMessage]:
         message_list = []
         for message_type, timestamp, content in db.read(
-            "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant') AND timestamp BETWEEN %s AND %s ORDER BY timestamp ASC",
+            "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant' OR message_type = 'system') AND timestamp BETWEEN %s AND %s ORDER BY timestamp ASC",
             (self.agent_id, start_timestamp, end_timestamp),
         ):
             message_list.append(
