@@ -123,7 +123,7 @@ async def heartbeat_query(agent_id: str):
         print("(Timed heartbeat) Triggering timed heartbeat...", flush=True)
 
         user_exit_time = db.read(
-            "SELECT user_exit_time FROM agents WHERE agent_id = %s;",
+            "SELECT user_exit_time FROM agents WHERE id = %s;",
             (agent_id,),
         )[0][0]
 
@@ -183,7 +183,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                             if begin_interaction := json_data.get("begin_interaction"):
                                 is_first_interaction = (
                                     db.read(
-                                        "SELECT user_exit_time FROM agents WHERE agent_id = %s;",
+                                        "SELECT user_exit_time FROM agents WHERE id = %s;",
                                         (agent_id,),
                                     )[0][0]
                                     is None

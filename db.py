@@ -138,9 +138,9 @@ write(
     "CREATE INDEX IF NOT EXISTS idx_recall_agent_timestamp ON recall_storage(agent_id, timestamp);",
 )
 
-write(
-    "CREATE INDEX IF NOT EXISTS idx_recall_content_trgm ON recall_storage USING gin (content gin_trgm_ops);",
-)
+# write(
+#     "CREATE INDEX IF NOT EXISTS idx_recall_content_trgm ON recall_storage USING gin (content gin_trgm_ops);",
+# )
 
 write(
     "CREATE INDEX IF NOT EXISTS idx_chat_log_agent_timestamp ON chat_log(agent_id, timestamp DESC);",
