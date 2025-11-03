@@ -14,7 +14,7 @@ from memory import FunctionResultContent, Memory, Message
 
 # *chat_log_search
 class ChatLogSearchValidator(BaseModel):
-    """Queries last 50 messages (oldest to newest within page, higher pages yield older messages) from Chat Log. Optionally filters by text (exact match)."""
+    """Queries recent messages (oldest to newest within page, higher pages yield older messages) from Chat Log. Optionally filters by text (exact match)."""
 
     query: Optional[str] = Field(
         description="Optional search query. Exact match (case-insensitive) required for result to show up."
@@ -59,7 +59,7 @@ class ChatLogSearch(FunctionNode):
 
 # *chat_log_search_by_date
 class ChatLogSearchByDateValidator(BaseModel):
-    """Searches Chat Log by datetime range."""
+    """Searches Chat Log by datetime range (oldest to newest within page, higher pages yield older messages) ."""
 
     start_timestamp: datetime = Field(
         description="Starting timestamp (must conform to ISO 8601 format)"
