@@ -254,7 +254,7 @@ SET tasks = tasks[2:array_length(tasks,1)]
 WHERE agent_id = %s
 RETURNING (SELECT task_to_return FROM popped);
     """,
-            (self.agent_id, self.agent_id),
+            (self.agent_id, self.agent_id,),
         )[0][0]
 
         return popped_task
@@ -443,7 +443,7 @@ class ChatLog:
         else:
             rows = db.read(
                 "SELECT message_type, timestamp, content FROM chat_log WHERE agent_id = %s AND (message_type = 'user' OR message_type = 'assistant' OR message_type = 'system') ORDER BY timestamp DESC",
-                (self.agent_id),
+                (self.agent_id,),
             )
 
         return [ChatLogMessage(*row) for row in rows]
@@ -515,7 +515,7 @@ class FIFOQueue:
     def peek_message(self) -> Message:
         db_res = db.read(
             "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = %s AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = %s);",
-            (self.agent_id, self.agent_id),
+            (self.agent_id, self.agent_id,),
         )
         # print(db_res)
 
