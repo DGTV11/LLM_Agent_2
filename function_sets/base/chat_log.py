@@ -14,7 +14,7 @@ from memory import FunctionResultContent, Memory, Message
 
 # *chat_log_search
 class ChatLogSearchValidator(BaseModel):
-    """Queries last 10 messages (oldest to newest) from Chat Log. Optionally filters by text (exact match)."""
+    """Queries last 50 messages (oldest to newest within page, higher pages yield older messages) from Chat Log. Optionally filters by text (exact match)."""
 
     query: Optional[str] = Field(
         description="Optional search query. Exact match (case-insensitive) required for result to show up."
@@ -37,15 +37,13 @@ class ChatLogSearch(FunctionNode):
         conn: Connection,
         arguments_validated: ChatLogSearchValidator,
     ) -> Message:
-        messages = memory.chat_log.recent_search(
-            arguments_validated.query, 10
-        )  # *NOTE: Hardcoded for now
+        messages = memory.chat_log.recent_search(arguments_validated.query)
 
         result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)} (Newest message timestamp: {messages[0].timestamp.isoformat()}, Oldest message timestamp: {messages[-1].timestamp.isoformat()}):"
         offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(
-            messages[offset : offset + PAGE_SIZE], start=1
+            messages[offset : offset + PAGE_SIZE][::-1], start=1
         ):
             result_str += (
                 "\n\n"
@@ -95,7 +93,7 @@ class ChatLogSearchByDate(FunctionNode):
         offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(
-            messages[offset : offset + PAGE_SIZE], start=1
+            messages[offset : offset + PAGE_SIZE][::-1], start=1
         ):
             result_str += (
                 "\n\n"

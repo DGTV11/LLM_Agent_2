@@ -143,7 +143,7 @@ write(
 # )
 
 write(
-    "CREATE INDEX IF NOT EXISTS idx_chat_log_agent_timestamp ON chat_log(agent_id, timestamp ASC);",
+    "CREATE INDEX IF NOT EXISTS idx_chat_log_agent_timestamp ON chat_log(agent_id, timestamp DESC);",
 )
 
 write(
