@@ -378,7 +378,7 @@ async def chat(agent_id: str, websocket: WebSocket):
             print("Recording termination time...", flush=True)
 
             db.write(
-                "UPDATE agents SET user_exit_time = %s WHERE agent_id = %s;",
+                "UPDATE agents SET user_exit_time = %s WHERE id = %s;",
                 (
                     datetime.now(),
                     agent_id,

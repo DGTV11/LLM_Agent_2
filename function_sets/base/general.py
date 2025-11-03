@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from communication import AgentToParentMessage
 from function_node import FunctionNode
-from memory import FunctionResultContent, Memory, Message
+from memory import ChatLogMessage, FunctionResultContent, Memory, Message
 
 
 # *noop
