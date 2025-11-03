@@ -685,7 +685,11 @@ class Memory:
         self.fifo_queue.push_message(message)
         self.recall_storage.push_message(message)
 
-        if self.in_convo and message.message_type in ["user", "system"]:
+        if (
+            self.in_convo
+            and (message.message_type == "user" or message.message_type == "system")
+            and type(message.content) is TextContent
+        ):
             self.chat_log.push_message(
                 ChatLogMessage(
                     message_type=message.message_type,
