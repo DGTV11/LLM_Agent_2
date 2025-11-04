@@ -7,7 +7,7 @@ import orjson
 from pocketflow import *
 from pydantic import BaseModel, Field, NonNegativeInt
 
-from config import PAGE_SIZE
+from config import CHAT_LOG_PAGE_SIZE
 from function_node import FunctionNode
 from memory import FunctionResultContent, Memory, Message
 
@@ -39,11 +39,11 @@ class ChatLogSearch(FunctionNode):
     ) -> Message:
         messages = memory.chat_log.recent_search(arguments_validated.query)
 
-        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)} (Newest message timestamp: {messages[0].timestamp.isoformat()}, Oldest message timestamp: {messages[-1].timestamp.isoformat()}):"
-        offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
+        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/CHAT_LOG_PAGE_SIZE)} (Newest message timestamp: {messages[0].timestamp.isoformat()}, Oldest message timestamp: {messages[-1].timestamp.isoformat()}):"
+        offset = min(arguments_validated.page * CHAT_LOG_PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(
-            messages[offset : offset + PAGE_SIZE][::-1], start=1
+            messages[offset : offset + CHAT_LOG_PAGE_SIZE][::-1], start=1
         ):
             result_str += (
                 "\n\n"
@@ -89,11 +89,11 @@ class ChatLogSearchByDate(FunctionNode):
             arguments_validated.start_timestamp, arguments_validated.end_timestamp
         )
 
-        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/PAGE_SIZE)}:"
-        offset = min(arguments_validated.page * PAGE_SIZE, len(messages))
+        result_str = f"Results for page {arguments_validated.page}/{ceil(len(messages)/CHAT_LOG_PAGE_SIZE)}:"
+        offset = min(arguments_validated.page * CHAT_LOG_PAGE_SIZE, len(messages))
 
         for res_no, message in enumerate(
-            messages[offset : offset + PAGE_SIZE][::-1], start=1
+            messages[offset : offset + CHAT_LOG_PAGE_SIZE][::-1], start=1
         ):
             result_str += (
                 "\n\n"
