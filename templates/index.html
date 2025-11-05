@@ -10,20 +10,21 @@
         <h1 class="font-bold text-8xl pb-8">Agents</h1>
         <div>
             <ul class="flex flex-col gap-4">
-                {% for id, created_at, optional_function_sets, agent_persona, user_persona, recursive_summary, recursive_summary_update_time in agent_infos %}
+                {% for agent_info in agent_infos %}
                     <li class="border-black border-2 rounded-2xl p-4 flex flex-col gap-2">
                         <div class="flex justify-between items-center">
                             <h2 class="font-bold text-lg">
-                                <a href="{{ url_for('chat_page', agent_id=id) }}">{{ id }}</a>
+                                <a href="{{ url_for('chat_page', agent_id=agent_info['id']) }}">{{ agent_info['id'] }}</a>
                             </h2>
                             <button type="button"
                                     class="fetch-btn font-bold text-red-500"
-                                    data-url="/api/agents/{{ id }}">Delete</button>
+                                    data-url="/api/agents/{{ agent_info['id'] }}">Delete</button>
                         </div>
-                        <p class="text-sm text-gray-500">Created at {{ created_at }}</p>
-                        <p class="italic text-gray-700 whitespace-pre-wrap">{{ agent_persona }}</p>
+                        <p class="text-sm text-gray-500">Created at {{ agent_info['created_at'] }}</p>
+                        <p class="text-xs text-gray-500">Last user exit at {{ agent_info['user_exit_time'] }}</p>
+                        <p class="italic text-gray-700 whitespace-pre-wrap">{{ agent_info['agent_persona'] }}</p>
                         <div class="mt-2">
-                            {% for ofc in optional_function_sets %}
+                            {% for ofc in agent_info['optional_function_sets'] %}
                                 <span class="text-xs bg-gray-200 rounded-full px-2 py-0.5">{{ ofc }}</span>
                             {% endfor %}
                         </div>

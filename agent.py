@@ -481,26 +481,39 @@ def create_new_agent(
     return str(agent_id)
 
 
-def get_agents() -> List[Tuple[UUID, datetime, List[str], str, str, str, datetime]]:
+def get_agents() -> List[Dict[Any, Union[UUID, datetime, List[str], str]]]:
     # return db.read("SELECT id, created_at FROM agents;")
     partial_agent_infos = db.read(
-        "SELECT id, created_at, optional_function_sets, recursive_summary, recursive_summary_update_time FROM agents;"
+        "SELECT id, created_at, user_exit_time, optional_function_sets, recursive_summary, recursive_summary_update_time FROM agents;"
     )
 
-    return [
-        (
-            id,
-            created_at,
-            optional_function_sets,
-            *db.read(
-                "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = %s;",
-                (id,),
-            )[0],
-            recursive_summary,
-            recursive_summary_update_time,
+    agent_infos = []
+    for (
+        id,
+        created_at,
+        user_exit_time,
+        optional_function_sets,
+        recursive_summary,
+        recursive_summary_update_time,
+    ) in partial_agent_infos:
+        agent_persona, user_persona = db.read(
+            "SELECT agent_persona, user_persona FROM working_context WHERE agent_id = %s;",
+            (id,),
+        )[0]
+        agent_infos.append(
+            {
+                "id": id,
+                "created_at": created_at,
+                "user_exit_time": user_exit_time,
+                "optional_function_sets": optional_function_sets,
+                "agent_persona": agent_persona,
+                "user_persona": user_persona,
+                "recursive_summary": recursive_summary,
+                "recursive_summary_update_time": recursive_summary_update_time,
+            }
         )
-        for id, created_at, optional_function_sets, recursive_summary, recursive_summary_update_time in partial_agent_infos
-    ]
+
+    return agent_infos
 
 
 def delete_agent(agent_id: str) -> None:
