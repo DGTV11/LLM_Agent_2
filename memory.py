@@ -254,7 +254,10 @@ SET tasks = tasks[2:array_length(tasks,1)]
 WHERE agent_id = %s
 RETURNING (SELECT task_to_return FROM popped);
     """,
-            (self.agent_id, self.agent_id,),
+            (
+                self.agent_id,
+                self.agent_id,
+            ),
         )[0][0]
 
         return popped_task
@@ -515,7 +518,10 @@ class FIFOQueue:
     def peek_message(self) -> Message:
         db_res = db.read(
             "SELECT id, agent_id, message_type, timestamp, content FROM fifo_queue WHERE agent_id = %s AND timestamp = (SELECT MIN(timestamp) FROM fifo_queue WHERE agent_id = %s);",
-            (self.agent_id, self.agent_id,),
+            (
+                self.agent_id,
+                self.agent_id,
+            ),
         )
         # print(db_res)
 
@@ -558,16 +564,29 @@ class GenerateNewRecursiveSummaryResult(BaseModel):
 
 
 class GenerateNewRecursiveSummary(Node):
-    def prep(self, shared: Dict[str, Any]) -> List[str]:
+    def prep(self, shared: Dict[str, Any]) -> Tuple[List[str], str, str]:
         evicted_message_strs = shared["evicted_message_strs"]
         assert isinstance(evicted_message_strs, list)
 
-        return evicted_message_strs
+        agent_persona = shared["agent_persona"]
+        assert isinstance(agent_persona, str)
 
-    def exec(self, evicted_message_strs: List[str]) -> str:
+        user_persona = shared["user_persona"]
+        assert isinstance(user_persona, str)
+
+        return evicted_message_strs, agent_persona, user_persona
+
+    def exec(self, inputs: Tuple[List[str], str, str]) -> str:
+        evicted_message_strs, agent_persona, user_persona = inputs
+
         resp = call_llm(
             [
-                {"role": "system", "content": RECURSIVE_SUMMARY_PROMPT},
+                {
+                    "role": "system",
+                    "content": RECURSIVE_SUMMARY_PROMPT.format(
+                        agent_persona, user_persona
+                    ),
+                },
                 {"role": "user", "content": "\n\n".join(evicted_message_strs)},
             ]
         )
@@ -577,7 +596,12 @@ class GenerateNewRecursiveSummary(Node):
 
         return result_validated.summary
 
-    def post(self, shared: Dict[str, Any], prep_res: List[str], exec_res: str) -> None:
+    def post(
+        self,
+        shared: Dict[str, Any],
+        prep_res: Tuple[List[str], str, str],
+        exec_res: str,
+    ) -> None:
         shared["summary"] = exec_res
 
 
@@ -734,7 +758,11 @@ class Memory:
                 yaml.dump(self.fifo_queue.pop_message().to_intermediate_repr()).strip()
             )
 
-        shared = {"evicted_message_strs": evicted_message_strs}
+        shared = {
+            "evicted_message_strs": evicted_message_strs,
+            "agent_persona": self.working_context.agent_persona,
+            "user_persona": self.working_context.user_persona,
+        }
 
         generate_new_recursive_summary_node.run(shared)
 

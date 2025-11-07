@@ -29,7 +29,7 @@ class GeneratePersona(Node):
         goals = shared["goals"]
         assert isinstance(goals, str)
 
-        return shared["goals"]
+        return goals
 
     def exec(self, goals: str) -> str:
         resp = call_llm(

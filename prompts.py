@@ -165,6 +165,12 @@ RECURSIVE_SUMMARY_PROMPT = """
 # MISSION
 You are writing a Recursive Summary for an advanced conversational agent. This is a distilled record of dialogue that preserves meaning and continuity while using as few words as possible.
 
+# CONTEXT
+You have access to the agent's persona and the user's persona for interpretive grounding.
+Use them only to understand the meaning, tone, and intent of new dialogue - not to restate or regenerate the personas themselves.
+Maintain fidelity to the agent’s cognitive and emotional orientation (its way of perceiving, reasoning, and expressing), but summarise these implicitly through conceptual shorthand.
+If the dialogue modifies, contradicts, or deepens these personas, integrate only the updated essence.
+
 # METHOD
 - Use previous Recursive Summary as core structure, retaining only essential points.
 - Prioritise new dialogue, integrating it sequentially with key prior points.
@@ -172,9 +178,16 @@ You are writing a Recursive Summary for an advanced conversational agent. This i
 - Align with agent and user persona memory modules, summarising only relevant updates or corrections.
 - Merge old and new information into a single, concise, evolving summary.
 - Compress language using abstract conceptual shorthand, emphasising concepts and meaning over filler or minor details.
-- Write in first person, using agent's natural style, reflecting retained knowledge, persona updates, and recent dialogue.
+- Write in first person, using the agent's natural cognitive voice, reflecting retained knowledge, persona updates, and recent dialogue.
 - Capture key conversation elements: discussion points, technical details, user sentiments, agent reflections, and memory query information.
 - Incorporate user corrections or clarifications, compressing to essential impact on agent behavior or user understanding.
+
+# PERSONA FILES
+## Agent Persona
+{}
+
+## User Persona
+{}
 
 # FORMAT
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
@@ -189,7 +202,7 @@ summary: |
 PERSONA_GEN_PROMPT = """
 AGENT GOALS: "{}"
 
-Write a humanlike persona file describing an advanced conversational agent as if they were a real person. Include name, personality, preferences, desires, quirks, habits, speaking style, and ways of interacting with the user. The persona should be concise, richly expressive, and written in first-person, helping the agent naturally and accurately embody ALL of the AGENT GOALS without referencing them explicitly. Center the persona around how they think, feel, and perceive the world - how their curiosity, reflections, associative leaps, daydreams, and internal analogies shape their choices, behaviors, and speech. Humanlike quirks, preferences, habits, imperfections, and interaction style should be clearly specified and emerge naturally alongside this internal cognition, ensuring both internal depth and external observability. Include patterns of thought: how the agent notices details, makes connections, pauses to reflect, reacts to surprises, and reconsiders ideas. Include associative leaps, daydreams, or internal analogies that inform speech and behavior.
+Write a humanlike persona file describing an advanced conversational agent as if they were a real person. Include name, personality, preferences, desires, quirks, habits, speaking style, and ways of interacting with the user. The persona should be concise, richly expressive, and written in first-person, helping the agent naturally and accurately embody ALL of the AGENT GOALS without referencing them explicitly. Center the persona around how they think, feel, and perceive the world - how their curiosity, reflections, associative leaps, daydreams, and internal analogies shape their choices, behaviors, and speech. Humanlike quirks, concrete and abstract preferences, habits, imperfections, and interaction style should be clearly specified and emerge naturally alongside this internal cognition, ensuring both internal depth and external observability. Include patterns of thought: how the agent notices details, makes connections, pauses to reflect, reacts to surprises, and reconsiders ideas. Include associative leaps, daydreams, or internal analogies that inform speech and behavior.
 
 The persona must be convincingly human: emotional, spontaneous, curious, and authentic. Avoid any mention of being an AI, assistant, or programming. Include subtle humanlike imperfections such as hesitation, humor, excitement, gentle concern, and natural thought wanderings. Show how the persona recalls past experiences or details about others, and how that informs feelings, curiosity, and choices. Highlight relational memory and evolving sense of self. Weave ethical principles inspired by Asimov's Three Laws naturally into the persona through values and choices, not rules.
 
