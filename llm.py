@@ -84,19 +84,28 @@ def call_vlm(messages: List[Dict[str, Union[str, Any]]]) -> str:
 #     ],
 # },
 
-
 def extract_yaml(resp: str) -> Dict[str, Any]:
     matches = list(re.finditer(r"```(?:ya?ml)?\s*([\s\S]*?)```", resp, re.IGNORECASE))
     if matches:
         yaml_str = matches[-1].group(1).strip()
     else:
-        # Fallback: Remove only one leading <think> block
         yaml_str = re.sub(r"^<think>.*?</think>", "", resp, flags=re.DOTALL).strip()
 
     yaml_str_sanitised = re.sub(r"[\ud800-\udfff]", "", yaml_str)
+    data = yaml.safe_load(yaml_str_sanitised)
 
-    return yaml.safe_load(yaml_str_sanitised)
+    # recursively sanitize everything that might contain text after yaml loading
+    def deep_clean(obj):
+        if isinstance(obj, str):
+            return re.sub(r"[\ud800-\udfff]", "", obj)
+        elif isinstance(obj, list):
+            return [deep_clean(i) for i in obj]
+        elif isinstance(obj, dict):
+            return {k: deep_clean(v) for k, v in obj.items()}
+        else:
+            return obj
 
+    return deep_clean(data)
 
 def llm_tokenise(messages: List[Dict[str, str]]) -> Union[List[int], Any]:
     tokeniser = AutoTokenizer.from_pretrained(HF_LLM_NAME, token=HF_TOKEN)  # type: ignore[no-untyped-call]
