@@ -42,7 +42,7 @@ class ExecutePython(FunctionNode):
             message_type="function_res",
             timestamp=datetime.now(),
             content=FunctionResultContent(
-                success=bool(result.exit_code),
+                success=not bool(result.exit_code),
                 result="\n\n".join(
                     [
                         f"stdout: {result.stdout}",
