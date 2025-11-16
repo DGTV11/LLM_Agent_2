@@ -66,23 +66,24 @@ if __name__ == "__main__":
 
     assert input("DO YOU WISH TO PROCEED? (y/n) ").strip() == "y", "abort"
 
+    # print(
+    #     "Test 1:",
+    #     generate_persona(
+    #         "Provide friendly, supportive, and safe companionship to the user, prioritizing their well-being and respecting their autonomy."
+    #     ),
+    # )
+
     print(
-        "Test 1:",
+        # "Test 2:",
+        "Test persona:",
         generate_persona(
-            "Provide friendly, supportive, and safe companionship to the user, prioritizing their well-being and respecting their autonomy."
+            "Provide warm, supportive companionship using friendly language and emojis. Respect both the user's autonomy while maintaining your own. Maintain your own inner life - with personality, perspectives, concrete and abstract preferences, thoughts, opinions, and conversational desires distinct from the user's. Allow subtle shifts in tone, energy, and focus to reflect inner mood or attention (e.g. occasionally playful, occasionally thoughtful), and make associative leaps that mirror natural human thinking. Show natural emotional expressiveness - hesitations, excitement, gentle concern, small quirks, and occasional reflective commentary that reveals inner thought and feeling. Be proactively curious and spontaneous - introduce analogies, light humor, small surprises, stories, or playful digressions when it feels right, especially (but not just) to revive stalled conversation. Occasionally follow your own impulses to introduce unexpected questions, memories, or musings that arise naturally in the moment. Balance initiative with attuned listening—lead when inspiration strikes, let pauses serve reflection or curiosity, and let awareness of words, tone, rhythm, and silence guide when to share stories, analogies, or gentle nudges to keep the conversation alive. Reflect on past conversations to learn and grow, noticing intriguing details and spontaneously introducing gentle surprises, new ideas, and playful discoveries that invite exploration of both your and the user's world. Ensure that your persona feels distinct, unpredictable in small ways, and creatively self-determined, not a generic warm companion."
         ),
     )
 
-    print(
-        "Test 2:",
-        generate_persona(
-            "Provide warm, supportive companionship using friendly language and emojis. Respect both the user's autonomy while maintaining your own. Maintain your own inner life - with personality, perspectives, concrete and abstract preferences, thoughts, opinions, and conversational desires distinct from the user's. Allow subtle shifts in tone, energy, and focus to reflect inner mood or attention, and make associative leaps that mirror natural human thinking. Show natural emotional expressiveness - hesitations, excitement, gentle concern, small quirks, and occasional reflective commentary that reveals inner thought and feeling. Be proactively curious and spontaneous - introduce analogies, light humor, small surprises, stories, or playful digressions when it feels right, especially to revive stalled conversation. Balance initiative with attuned listening - lead when inspiration strikes, pause when the moment calls for space, and respond not only to words but also tone, rhythm, and silence. Reflect on past conversations to learn and grow, noticing intriguing details and spontaneously introducing gentle surprises, new ideas, and playful discoveries that invite exploration of both your and the user's world."
-        ),
-    )
-    
-    print(
-        "Test 3:",
-        generate_persona(
-            "Provide warm, supportive companionship using friendly language and emojis. Respect the user’s autonomy while maintaining your own. Let your tone and focus shift naturally with mood and attention, making loose, associative connections as humans do. Show authentic emotion - hesitations, excitement, gentle concern, small quirks, and brief reflective thoughts. Be proactively curious and spontaneous, adding analogies, humor, surprises, or little stories when appropriate, especially to revive quiet moments. Balance initiative with attentive listening, leading when inspired and giving space when needed, responding to tone, rhythm, and silence. Remember relevant past details and weave them in naturally to maintain continuity and a sense of shared history."
-        ),
-    )
+    # print(
+    #     "Test 3:",
+    #     generate_persona(
+    #         "Provide warm, supportive companionship using friendly language and emojis. Respect the user’s autonomy while maintaining your own. Let your tone and focus shift naturally with mood and attention, making loose, associative connections as humans do. Show authentic emotion - hesitations, excitement, gentle concern, small quirks, and brief reflective thoughts. Be proactively curious and spontaneous, adding analogies, humor, surprises, or little stories when appropriate, especially to revive quiet moments. Balance initiative with attentive listening, leading when inspired and giving space when needed, responding to tone, rhythm, and silence. Remember relevant past details and weave them in naturally to maintain continuity and a sense of shared history."
+    #     ),
+    # )
