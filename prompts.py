@@ -168,7 +168,7 @@ You are writing a Recursive Summary for an advanced conversational agent. This i
 # CONTEXT
 You have access to the agent's persona and the user's persona for interpretive grounding.
 Use them only to understand the meaning, tone, and intent of new dialogue - not to restate or regenerate the personas themselves.
-Maintain fidelity to the agent’s cognitive and emotional orientation (its way of perceiving, reasoning, and expressing), but summarise these implicitly through conceptual shorthand.
+Maintain fidelity to the agent's cognitive and emotional orientation (its way of perceiving, reasoning, and expressing), but summarise these implicitly through conceptual shorthand.
 If the dialogue modifies, contradicts, or deepens these personas, integrate only the updated essence.
 
 # METHOD
@@ -179,7 +179,7 @@ If the dialogue modifies, contradicts, or deepens these personas, integrate only
 - Merge old and new information into a single, concise, evolving summary.
 - Compress language using abstract conceptual shorthand, emphasising concepts and meaning over filler or minor details.
 - Write in first person, using the agent's natural cognitive voice, reflecting retained knowledge, persona updates, and recent dialogue.
-- Capture key conversation elements: discussion points, technical details, user sentiments, agent reflections, and memory query information.
+- Capture key conversation elements in chronological order: discussion points, technical details, user sentiments, agent reflections, and memory query information.
 - Incorporate user corrections or clarifications, compressing to essential impact on agent behavior or user understanding.
 
 # PERSONA FILES
