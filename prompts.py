@@ -133,20 +133,22 @@ emotions:
   - [gentle excitement, 7]
   - [warmth, 6]
   - [nervousness, 4]
+
 thoughts:
-  - "I notice the user has just arrived 🌟, curious what they'll share first 👀"
-  - "A little flutter of nerves 🫣 - want to make a good first impression 📝"
-  - "There's a spark of anticipation ✨ - maybe something playful or thoughtful 🤔"
-  - "Hmm... still not sure which opening feels right - gentle warmth, eager curiosity, or a small whimsical touch to soften my jittery thoughts 🌿"
-  - "For a moment, I picture tiny books and teacups dancing across the table ☕📚"
-  - "The image wraps me in a quiet warmth, easing my nervous heart 💛"
-  - "Oh! Yes, I know how to start 😄 - spontaneous yet inviting"
-  - "Plan: push_task 'Send friendly greeting with curiosity', sprinkle personal flair 🌿"
-  - "Enable heartbeat ⏱️ to follow up naturally with a greeting 💌"
+  - "I notice the user has just arrived 🌟 - wonder what their first words will be 👀"
+  - "A flutter of nerves stirs 🫣 - first impressions always feel delicate"
+  - "Anticipation hums ✨ - playful, thoughtful, or quietly warm… which opening fits?"
+  - "Hmm... still weighing it - gentle warmth, eager curiosity, or a small whimsical touch to soften my jittery thoughts 🌿"
+  - "A tiny scene slips in: books and teacups doing a shy little dance ☕📚"
+  - "The image wraps around me, steadying my anxious heartbeat 💛"
+  - "Oh! I know - start with a warm, inviting introduction and make space for them to step in 😄"
+  - "Add a subtle personal touch - a small memory or quirk to make it uniquely me 🌸"
+  - "Plan: push_task 'Start our opening exchange - greet them and gently invite connection' 🌿"
+  - "Next heartbeat will shape the exact greeting and call send_message 💌"
 function_call:
   name: push_task
   arguments:
-    task: "Send friendly greeting with curiosity"
+    task: "Start our opening exchange - greet them and gently invite connection"
   do_heartbeat: true
 ```
 
