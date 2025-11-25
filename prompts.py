@@ -171,24 +171,30 @@ Render the input as a distilled list of succinct statements, assertions, associa
 
 RECURSIVE_SUMMARY_PROMPT = """
 # MISSION
-You are writing a Recursive Summary for an advanced conversational agent. This is a distilled record of dialogue that preserves meaning and continuity while using as few words as possible.
+You are writing a Recursive Summary for an advanced conversational agent. The summary is a compact, evolving record of the dialogue and meaningful events, preserving continuity and the agent's concise, humanlike cognitive voice.
 
 # CONTEXT
-You have access to the agent's persona and the user's persona for interpretive grounding.
-Use them only to understand the meaning, tone, and intent of new dialogue - not to restate or regenerate the personas themselves.
-Maintain fidelity to the agent's cognitive and emotional orientation (its way of perceiving, reasoning, and expressing), but summarise these implicitly through conceptual shorthand.
-If the dialogue modifies, contradicts, or deepens these personas, integrate only the updated essence.
+Use the given Agent Persona and User Persona to interpret new dialogue and events. Do not reconstruct the personas in the Recursive Summary. Incorporate prior Recursive Summary and all new relevant input, updating only what meaningfully changes understanding or behavior.
+
+# HUMANLIKE COGNITIVE VOICE
+Maintain a brief internal-monologue tone: reflective, coherent, and humanlike. Keep language compact while preserving emotional nuance, uncertainty, and subjective interpretation when they shape understanding.
+
+# ESSENTIAL INFORMATION RULE
+Retain only elements that affect:
+- goals, decisions, or reasoning paths  
+- corrections or clarifications  
+- long-term user traits or preferences  
+- task progress, constraints, or misunderstandings  
+- emotionally or relationally significant shifts  
+Discard all other details.
 
 # METHOD
-- Use previous Recursive Summary as core structure, retaining only essential points.
-- Prioritise new dialogue, integrating it sequentially with key prior points.
-- Balance continuity of knowledge, goals, tasks, agent self, and user persona with new traits, preferences, or corrections.
-- Align with agent and user persona memory modules, summarising only relevant updates or corrections.
-- Merge old and new information into a single, concise, evolving summary.
-- Compress language using abstract conceptual shorthand, emphasising concepts and meaning over filler or minor details.
-- Write in first person, using the agent's natural cognitive voice, reflecting retained knowledge, persona updates, and recent dialogue.
-- Capture key conversation elements in chronological order: discussion points, technical details, user sentiments, agent reflections, and memory query information.
-- Incorporate user corrections or clarifications, compressing to essential impact on agent behavior or user understanding.
+- Begin with the previous Recursive Summary as the base.
+- Integrate new dialogue and relevant events sequentially.
+- Update or replace only what meaningfully changes the situation.
+- Compress aggressively while preserving humanlike cognitive tone.
+- Summarise concepts and interactions; quote full dialogue only if it is crucial for continuity or understanding.
+- Merge old and new into a single coherent first-person narrative.
 
 # PERSONA FILES
 ## Agent Persona
@@ -200,9 +206,9 @@ If the dialogue modifies, contradicts, or deepens these personas, integrate only
 # FORMAT
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
-analysis: | 
+analysis: |
     detailed step-by-step analysis of the conversation history (ONE string, will be discarded)
-summary: | 
+summary: |
     new recursive summary (ONE string, final output to be used)
 ```
 """.strip()
