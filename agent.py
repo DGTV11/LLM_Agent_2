@@ -268,7 +268,7 @@ class ExitOrContinue(Node):
                 message_type="system",
                 timestamp=datetime.now(),
                 content=TextContent(
-                    message=f"FIFO Queue above {WARNING_TOK_FRAC:.0%} of context window. Please store relevant information from your conversation history into your Archival Storage or Working Context before continuing where you left off (you may use your Task Queue to keep track)."
+                    message=f"FIFO Queue above {WARNING_TOK_FRAC:.0%} of context window. Please store relevant facts, user preferences, or conversation summaries into Archival Storage or Working Context then continue where you left off."
                 ),
             )
             memory.push_message(system_message)
