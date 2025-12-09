@@ -189,7 +189,7 @@ async def chat(agent_id: str, websocket: WebSocket):
                                 is_first_interaction = user_exit_time is None
 
                                 system_msg = (
-                                    "A new user has entered the conversation. You should greet the user then get to know him/her."
+                                    "A new user has entered the conversation."
                                     if is_first_interaction
                                     else f"The user has re-entered the conversation after {precisedelta(datetime.now() - user_exit_time, minimum_unit="hours")}. You should greet the user then carry on where you have left off."
                                 )
