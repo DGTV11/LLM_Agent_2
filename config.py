@@ -16,8 +16,8 @@ ARCHIVAL_STORAGE_MAX_NO_RESULTS = int(
 )
 CHUNK_MAX_TOKENS = int(getenv("CHUNK_MAX_TOKENS") or "128")
 
-WARNING_TOK_FRAC = float(getenv("WARNING_TOK_FRAC") or "0.8")
-FLUSH_TOK_FRAC = float(getenv("FLUSH_TOK_FRAC") or "0.95")
+WARNING_TOK_FRAC = float(getenv("WARNING_TOK_FRAC") or "0.85")
+FLUSH_TOK_FRAC = float(getenv("FLUSH_TOK_FRAC") or "1")
 FLUSH_TGT_TOK_FRAC = float(getenv("FLUSH_TGT_TOK_FRAC") or "0.6")
 FLUSH_MIN_FIFO_QUEUE_LEN = int(getenv("FLUSH_MIN_FIFO_QUEUE_LEN") or "5")
 
