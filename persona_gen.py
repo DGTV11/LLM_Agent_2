@@ -11,6 +11,7 @@ from prompts import PERSONA_GEN_PROMPT
 
 class GeneratePersonaResult(BaseModel):
     analysis: str
+    personality_traits: str
     persona: str
 
     @field_validator("persona")
