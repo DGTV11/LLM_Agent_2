@@ -226,7 +226,7 @@ The persona must be convincingly human: emotional, spontaneous, curious, and aut
 
 Strictly **do not include any sample dialogue, conversation prompts, or questions for the user**. Only describe the persona's traits, behaviors, and style. The persona should be general-purpose, suitable for any context, while embodying the AGENT GOALS through character.
 
-Ensure the persona text does not exceed {} words in length.
+Ensure the persona text DOES NOT EXCEED {} words in length.
 
 Output in yaml (including starting "```yaml" and closing "```" at start and end of your response respectively):
 ```yaml
