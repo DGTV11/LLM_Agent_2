@@ -39,8 +39,8 @@ from config import (
     FLUSH_TGT_TOK_FRAC,
     FLUSH_TOK_FRAC,
     OVERTHINK_WARNING_HEARTBEAT_COUNT,
-    WARNING_TOK_FRAC,
     PERSONA_MAX_WORDS,
+    WARNING_TOK_FRAC,
 )
 from function_sets import FunctionSets
 from llm import call_llm, extract_yaml, llm_tokenise
@@ -455,6 +455,10 @@ def create_new_agent(
             f"Agent persona too long (maximum length {PERSONA_MAX_WORDS} words, requested length {agent_persona_length} words)"
         )
 
+    user_persona = (
+        user_persona
+        or "This is what I know or feel about the user. I should update this persona as our conversation progresses"
+    )
     user_persona_length = len(user_persona.split())
     if user_persona_length > PERSONA_MAX_WORDS:
         raise ValueError(
@@ -483,8 +487,7 @@ def create_new_agent(
             uuid4(),
             agent_id,
             agent_persona,
-            user_persona
-            or "This is what I know about the user. I should update this persona as our conversation progresses",
+            user_persona,
             [],
         ),
     )
