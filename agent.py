@@ -40,6 +40,7 @@ from config import (
     FLUSH_TOK_FRAC,
     OVERTHINK_WARNING_HEARTBEAT_COUNT,
     WARNING_TOK_FRAC,
+    PERSONA_MAX_WORDS,
 )
 from function_sets import FunctionSets
 from llm import call_llm, extract_yaml, llm_tokenise
@@ -448,6 +449,18 @@ def get_agent_flow(memory: Memory):
 def create_new_agent(
     optional_function_sets: List[str], agent_persona: str, user_persona: Optional[str]
 ) -> str:
+    agent_persona_length = len(agent_persona.split())
+    if agent_persona_length > PERSONA_MAX_WORDS:
+        raise ValueError(
+            f"Agent persona too long (maximum length {PERSONA_MAX_WORDS} words, requested length {agent_persona_length} words)"
+        )
+
+    user_persona_length = len(user_persona.split())
+    if user_persona_length > PERSONA_MAX_WORDS:
+        raise ValueError(
+            f"User persona too long (maximum length {PERSONA_MAX_WORDS} words, requested length {user_persona_length} words)"
+        )
+
     agent_id = uuid4()
 
     db.write(
