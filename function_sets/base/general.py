@@ -42,7 +42,9 @@ class Noop(FunctionNode):
 class SendMessageValidator(BaseModel):
     """Sends a message to the user. You usually shouldn't request heartbeats when calling this function (unless you want to double text or perform other operations before sending updates to the user). Can only be used during conversations with the user."""
 
-    message: str = Field(description="Message to be sent.")
+    message: str = Field(
+        description="Message to be sent. Should be written in the style of a text message sent through an SMS."
+    )
 
     model_config = {"title": "send_message"}
 
