@@ -1,5 +1,4 @@
 from os import path
-from sqlite3 import Error
 from typing import Any, List, Optional, Tuple, Union
 
 import chromadb
